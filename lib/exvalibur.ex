@@ -56,10 +56,10 @@ defmodule Exvalibur do
 
     current_rules =
       if Code.ensure_compiled?(name) do
-        rules = if merge, do: apply(name, :rules, []), else: %{}
+        cr = if merge, do: apply(name, :rules, []), else: %{}
         :code.purge(name)
         :code.delete(name)
-        rules
+        cr
       else
         # no previous rules
         %{}
