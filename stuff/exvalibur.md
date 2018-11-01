@@ -1,4 +1,4 @@
-# ![Logo](https://github.com/am-kantox/exvalibur/stuff/logo-48x48.png?raw=true) Exvalibur
+# ![Logo](https://github.com/am-kantox/exvalibur/blob/master/stuff/logo-48x48.png?raw=true) Exvalibur
 
 [![CircleCI](https://circleci.com/gh/am-kantox/exvalibur.svg?style=svg)](https://circleci.com/gh/am-kantox/exvalibur)     **generator for blazingly fast validators of maps based on sets of predefined rules**
 
