@@ -68,6 +68,7 @@ defmodule Exvalibur do
     Module.create(name, ast(rules, current_rules), Macro.Env.location(__ENV__))
   end
 
+  @doc false
   @spec get_or_create_module_name(
           opts :: Keyword.t(),
           key :: atom(),
