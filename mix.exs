@@ -2,7 +2,7 @@ defmodule Exvalibur.MixProject do
   use Mix.Project
 
   @app :exvalibur
-  @app_name "Exvalibur"
+  @app_name "exvalibur"
   @version "0.2.0"
 
   def project do
@@ -68,7 +68,7 @@ defmodule Exvalibur.MixProject do
       logo: "stuff/logo-48x48.png",
       source_url: "https://github.com/am-kantox/#{@app}",
       extras: [
-        # "stuff/#{@app_name}.md",
+        "stuff/#{@app_name}.md",
         # "stuff/backends.md"
       ],
       groups_for_modules: [
