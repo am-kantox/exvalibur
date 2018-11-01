@@ -32,6 +32,21 @@ defmodule Exvalibur do
       iex> Exvalibur.Validator.valid?(%{currency_pair: "EURUSD", rate: 1.5})
       {:ok, %{currency_pair: "EURUSD", rate: 1.5}}
 
+  ## Unknown conditions
+
+      iex> rules = [
+      ...>   %{matches: %{currency_pair: "EURGBP"},
+      ...>     conditions: %{rate: %{perfect: true}}}]
+      ...> try do
+      ...>   Exvalibur.validator!(rules, module_name: Exvalibur.Validator)
+      ...> rescue
+      ...>   e in [Exvalibur.Error] ->
+      ...>   e.reason
+      ...> end
+      %{unknown_guard: :perfect}
+
+  When an unknown guard is passed to the rules conditions, compile-time error is produced
+
   ## Return value
 
   Generated `valid?/1` function returns either `:error` or `{:ok, map()}`.
@@ -105,7 +120,7 @@ defmodule Exvalibur do
 
     [
       quote do
-        import Exvalibur.Guargs
+        import Exvalibur.Guards
       end
       | rules
         |> Map.values()
@@ -119,7 +134,10 @@ defmodule Exvalibur do
 
           guards =
             for {var, guards} <- conditions, {guard, val} <- guards do
-              Exvalibur.Guargs.guard!(guard, __MODULE__, var, val)
+              unless Exvalibur.Guards.guard?(guard),
+                do: raise(Exvalibur.Error, reason: %{unknown_guard: guard})
+
+              Exvalibur.Guards.guard!(guard, __MODULE__, var, val)
             end
             |> Enum.reduce([], fn
               guard, [] ->

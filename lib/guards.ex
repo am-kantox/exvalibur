@@ -1,4 +1,4 @@
-defmodule Exvalibur.Guargs do
+defmodule Exvalibur.Guards do
   @moduledoc false
   defmodule Default do
     @moduledoc """
@@ -69,6 +69,18 @@ defmodule Exvalibur.Guargs do
   end
 
   @guards_module Application.get_env(:exvalibur, :guards, __MODULE__.Default)
+  @guards :functions
+          |> @guards_module.__info__()
+          |> Enum.filter(&(elem(&1, 1) == 2))
+          |> Keyword.keys()
+
+  @doc false
+  @spec guards() :: [atom()]
+  def guards(), do: @guards
+
+  @doc false
+  @spec guard?(any()) :: boolean()
+  def guard?(guard), do: is_atom(guard) and Enum.any?(@guards, &(&1 == guard))
 
   @doc false
   @spec guard!(atom(), atom(), atom(), any()) :: {:and | :in | :not | :or, list(), list()}
