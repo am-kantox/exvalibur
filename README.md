@@ -1,21 +1,44 @@
-# Exvalibur
+# ![Logo](/stuff/logo-48x48.png?raw=true) Exvalibur
 
-**TODO: Add description**
+[![CircleCI](https://circleci.com/gh/am-kantox/exvalibur.svg?style=svg)](https://circleci.com/gh/am-kantox/exvalibur)     **generator for blazingly fast validators of maps based on sets of predefined rules**
 
 ## Installation
 
-If [available in Hex](https://hex.pm/docs/publish), the package can be installed
-by adding `exvalibur` to your list of dependencies in `mix.exs`:
+Simply add `exvalibur` to your list of dependencies in `mix.exs`:
 
 ```elixir
 def deps do
   [
-    {:exvalibur, "~> 0.1.0"}
+    {:exvalibur, "~> 0.1"}
   ]
 end
 ```
 
-Documentation can be generated with [ExDoc](https://github.com/elixir-lang/ex_doc)
-and published on [HexDocs](https://hexdocs.pm). Once published, the docs can
-be found at [https://hexdocs.pm/exvalibur](https://hexdocs.pm/exvalibur).
+## Usage
+
+```elixir
+rules = [
+  %{matches: %{currency_pair: "EURUSD"},
+    conditions: %{rate: %{min: 1.0, max: 2.0}}}]
+Exvalibur.validator!(rules, module_name: Exvalibur.Validator)
+Exvalibur.Validator.valid?(%{currency_pair: "EURUSD", rate: 1.5})
+#⇒ {:ok, %{currency_pair: "EURUSD", rate: 1.5}}
+Exvalibur.Validator.valid?(%{currency_pair: "EURGBP", rate: 1.5})
+#⇒ :error
+Exvalibur.Validator.valid?(%{currency_pair: "EURUSD", rate: 0.5})
+#⇒ :error
+
+rules = [
+  %{matches: %{currency_pair: "EURGBP"},
+    conditions: %{rate: %{min: 1.0, max: 2.0}}}]
+Exvalibur.validator!(rules, module_name: Exvalibur.Validator)
+Exvalibur.Validator.valid?(%{currency_pair: "EURGBP", rate: 1.5})
+#⇒ {:ok, %{currency_pair: "EURGBP", rate: 1.5}}
+Exvalibur.Validator.valid?(%{currency_pair: "EURUSD", rate: 1.5})
+#⇒ {:ok, %{currency_pair: "EURUSD", rate: 1.5}}
+```
+
+## Documentation
+
+Documentation is available at [https://hexdocs.pm/exvalibur](https://hexdocs.pm/exvalibur).
 

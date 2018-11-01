@@ -1,6 +1,6 @@
 defmodule Exvalibur do
   @moduledoc """
-  Documentation for Exvalibur.
+  `Exvalibur` is the generator for blazingly fast validators of maps based on sets of predefined rules.
   """
 
   @doc """

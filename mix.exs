@@ -1,13 +1,21 @@
 defmodule Exvalibur.MixProject do
   use Mix.Project
 
+  @app :exvalibur
+  @app_name "exvalibur"
+  @version "0.1.0"
+
   def project do
     [
-      app: :exvalibur,
-      version: "0.1.0",
-      elixir: "~> 1.6",
+      app: @app,
+      version: @version,
+      elixir: "~> 1.7",
       start_permanent: Mix.env() == :prod,
-      deps: deps()
+      package: package(),
+      xref: [exclude: []],
+      description: description(),
+      deps: deps(),
+      docs: docs()
     ]
   end
 
@@ -29,6 +37,47 @@ defmodule Exvalibur.MixProject do
       {:benchee, "~> 0.11", only: :dev},
       {:benchee_csv, "~> 0.7", only: :dev},
       {:ex_doc, "~> 0.19", only: :dev, runtime: false}
+    ]
+  end
+
+
+  defp description do
+    """
+    The generator of blazingly fast validator for map input.
+    """
+  end
+
+  defp package do
+    [
+      name: @app,
+      files: ~w|config lib mix.exs README.md|,
+      maintainers: ["Aleksei Matiushkin"],
+      licenses: ["MIT"],
+      links: %{
+        "GitHub" => "https://github.com/am-kantox/#{@app}",
+        "Docs" => "https://hexdocs.pm/#{@app}"
+      }
+    ]
+  end
+
+  defp docs() do
+    [
+      main: @app_name,
+      source_ref: "v#{@version}",
+      canonical: "http://hexdocs.pm/#{@app}",
+      logo: "stuff/logo-48x48.png",
+      source_url: "https://github.com/am-kantox/#{@app}",
+      extras: [
+        # "stuff/#{@app_name}.md",
+        # "stuff/backends.md"
+      ],
+      groups_for_modules: [
+        # Exvalibur
+
+        "Default Guards": [
+          Exvalibur.Guards.Default
+        ]
+      ]
     ]
   end
 end
