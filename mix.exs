@@ -62,7 +62,7 @@ defmodule Exvalibur.MixProject do
 
   defp docs() do
     [
-      main: @app_name,
+      # main: @app_name,
       source_ref: "v#{@version}",
       canonical: "http://hexdocs.pm/#{@app}",
       logo: "stuff/logo-48x48.png",
