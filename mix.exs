@@ -29,7 +29,7 @@ defmodule Exvalibur.MixProject do
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
-      {:nimble_csv, git: "https://github.com/plataformatec/nimble_csv.git", branch: "master"},
+      {:nimble_csv, "~> 0.4"},
       {:gen_stage, "~> 0.14"},
       {:flow, "~> 0.14"},
       {:credo, "~> 1.0.0-rc1", only: [:dev, :test], runtime: false},
