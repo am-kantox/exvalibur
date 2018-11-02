@@ -34,16 +34,16 @@ defmodule Exvalibur do
 
   ## Unknown conditions
 
-      iex> rules = [
-      ...>   %{matches: %{currency_pair: "EURGBP"},
-      ...>     conditions: %{rate: %{perfect: true}}}]
-      ...> try do
-      ...>   Exvalibur.validator!(rules, module_name: Exvalibur.Validator)
-      ...> rescue
-      ...>   e in [Exvalibur.Error] ->
-      ...>   e.reason
-      ...> end
-      %{unknown_guard: :perfect}
+  #    iex> rules = [
+  #    ...>   %{matches: %{currency_pair: "EURGBP"},
+  #    ...>     conditions: %{rate: %{perfect: true}}}]
+  #    ...> try do
+  #    ...>   Exvalibur.validator!(rules, module_name: Exvalibur.Validator2)
+  #    ...> rescue
+  #    ...>   e in [Exvalibur.Error] ->
+  #    ...>   e.reason
+  #    ...> end
+  #    %{unknown_guard: :perfect}
 
   When an unknown guard is passed to the rules conditions, compile-time error is produced
 
@@ -58,16 +58,17 @@ defmodule Exvalibur do
       ...>     conditions: %{
       ...>       rate: %{min: 1.0, max: 2.0},
       ...>       source: %{one_of: ["FOO", "BAR"]}}}]
-      ...> Exvalibur.validator!(rules, module_name: Exvalibur.Validator, merge: false)
-      ...> Exvalibur.Validator.valid?(%{currency_pair: "EURGBP", any: 42, rate: 1.5, source: "FOO"})
+      ...> Exvalibur.validator!(rules, module_name: Exvalibur.Validator3, merge: false)
+      ...> Exvalibur.Validator3.valid?(%{currency_pair: "EURGBP", any: 42, rate: 1.5, source: "FOO"})
       {:ok, %{currency_pair: "EURGBP", rate: 1.5, source: "FOO"}}
-      iex> Exvalibur.Validator.valid?(%{currency_pair: "EURUSD", any: 42, rate: 1.5, source: "BAH"})
+      iex> Exvalibur.Validator3.valid?(%{currency_pair: "EURUSD", any: 42, rate: 1.5, source: "BAH"})
       :error
   """
   @spec validator!(rules :: list(), opts :: list()) :: {:module, module(), binary(), term()}
   def validator!(rules, opts \\ []) when is_list(rules) and is_list(opts) do
     name = get_or_create_module_name(opts, :module_name, "Instance")
     merge = Keyword.get(opts, :merge, true)
+    processor = if opts[:flow], do: :flow, else: :enum
 
     current_rules =
       if Code.ensure_compiled?(name) do
@@ -80,7 +81,7 @@ defmodule Exvalibur do
         %{}
       end
 
-    Module.create(name, ast(rules, current_rules), Macro.Env.location(__ENV__))
+    Module.create(name, ast(rules, current_rules, processor), Macro.Env.location(__ENV__))
   end
 
   @doc false
@@ -98,23 +99,62 @@ defmodule Exvalibur do
          do: Module.concat([Macro.camelize(to_string(me)), "Exvalibur", fallback])
   end
 
-  @spec keyify({k :: any(), v :: any()}) :: binary()
-  defp keyify({k, v}) do
-    [k, v]
-    |> Enum.map(&to_string/1)
-    |> Enum.map(&String.downcase/1)
-    |> Enum.join()
-  end
-
   @spec rules_to_map(rules :: list()) :: map()
   defp rules_to_map(rules) when is_list(rules) do
-    for %{matches: matches} = rule <- rules,
-        do: {for({k, v} <- matches, do: keyify({k, v}), into: <<>>), rule},
+    for rule <- rules,
+        do: {:erlang.term_to_binary(rule), rule},
         into: %{}
   end
 
-  @spec ast(rules :: list(), current_rules :: map()) :: list()
-  defp ast(rules, current_rules) when is_list(rules) and is_map(current_rules) do
+  @spec reducer(map(), acc :: list()) :: list()
+  defp reducer(%{matches: matches, conditions: conditions}, acc) do
+    matches_and_conditions =
+      {:%{}, [],
+       conditions
+       |> Map.keys()
+       |> Enum.map(&{&1, Macro.var(&1, __MODULE__)})
+       |> Kernel.++(Map.to_list(matches))}
+
+    guards =
+      for {var, guards} <- conditions, {guard, val} <- guards do
+        unless Exvalibur.Guards.guard?(guard),
+          do: raise(Exvalibur.Error, reason: %{unknown_guard: guard})
+
+        Exvalibur.Guards.guard!(guard, __MODULE__, var, val)
+      end
+      |> Enum.reduce([], fn
+        guard, [] ->
+          guard
+
+        guard, ast ->
+          {:and, [context: Elixir, import: Kernel], [ast, guard]}
+      end)
+
+    [
+      quote do
+        def valid?(unquote(matches_and_conditions))
+            when unquote(guards),
+            do: {:ok, unquote(matches_and_conditions)}
+      end
+      | acc
+    ]
+  end
+
+  @spec transformer(rules :: list(), :flow | :enum) :: list()
+  defp transformer(rules, :flow) do
+    rules
+    |> Flow.from_enumerable()
+    |> Flow.reduce(fn -> [] end, &reducer/2)
+    |> Enum.to_list()
+  end
+
+  defp transformer(rules, :enum) do
+    Enum.reduce(rules, [], &reducer/2)
+  end
+
+  @spec ast(rules :: list(), current_rules :: map(), processor :: :flow | :enum) :: list()
+  defp ast(rules, current_rules, processor)
+       when is_list(rules) and is_map(current_rules) do
     # the latter takes precedence
     rules = Map.merge(current_rules, rules_to_map(rules))
 
@@ -124,35 +164,7 @@ defmodule Exvalibur do
       end
       | rules
         |> Map.values()
-        |> Enum.map(fn %{matches: matches, conditions: conditions} ->
-          matches_and_conditions =
-            {:%{}, [],
-             conditions
-             |> Map.keys()
-             |> Enum.map(&{&1, Macro.var(&1, __MODULE__)})
-             |> Kernel.++(Map.to_list(matches))}
-
-          guards =
-            for {var, guards} <- conditions, {guard, val} <- guards do
-              unless Exvalibur.Guards.guard?(guard),
-                do: raise(Exvalibur.Error, reason: %{unknown_guard: guard})
-
-              Exvalibur.Guards.guard!(guard, __MODULE__, var, val)
-            end
-            |> Enum.reduce([], fn
-              guard, [] ->
-                guard
-
-              guard, ast ->
-                {:and, [context: Elixir, import: Kernel], [ast, guard]}
-            end)
-
-          quote do
-            def valid?(unquote(matches_and_conditions))
-                when unquote(guards),
-                do: {:ok, unquote(matches_and_conditions)}
-          end
-        end)
+        |> transformer(processor)
         |> Kernel.++([
           quote do
             def valid?(_), do: :error
