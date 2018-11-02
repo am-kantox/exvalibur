@@ -223,7 +223,7 @@ defmodule Exvalibur do
         |> Kernel.++([
           quote do
             def valid?(_), do: :error
-            def rules(), do: unquote(Macro.escape(rules))
+            def rules, do: unquote(Macro.escape(rules))
           end
         ])
     ]

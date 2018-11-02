@@ -34,6 +34,7 @@ defmodule Exvalibur.MixProject do
       {:flow, "~> 0.14"},
       {:credo, "~> 1.0.0-rc1", only: [:dev, :test], runtime: false},
       {:dialyxir, "~> 1.0.0-rc.3", only: [:dev], runtime: false},
+      {:stream_data, "~> 0.4", only: :test},
       {:benchee, "~> 0.11", only: :dev},
       {:benchee_csv, "~> 0.7", only: :dev},
       {:ex_doc, "~> 0.19", only: :dev, runtime: false}
