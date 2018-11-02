@@ -76,7 +76,7 @@ defmodule Exvalibur.Guards do
 
   @doc false
   @spec guards() :: [atom()]
-  def guards(), do: @guards
+  def guards, do: @guards
 
   @doc false
   @spec guard?(any()) :: boolean()
