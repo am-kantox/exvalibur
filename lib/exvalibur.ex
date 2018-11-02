@@ -1,6 +1,21 @@
 defmodule Exvalibur do
   @moduledoc """
   `Exvalibur` is the generator for blazingly fast validators of maps based on sets of predefined rules.
+
+  Generally speaking, one provides a list of rules in a format of a map:
+
+      rules = [
+        %{matches: %{currency_pair: "EURUSD"},
+          conditions: %{rate: %{min: 1.0, max: 2.0}}},
+        %{matches: %{currency_pair: "USDEUR"},
+          conditions: %{rate: %{min: 1.2, max: 1.3}}},
+      ]
+
+  and calls `Exvalibur.validator!/2`. The latter will produce a validator module
+  with as many clauses of `valid?/1` function as we have rules above (plus one
+  handling-all clause.) Once generated, the `valid?/1` function of the module
+  generated might be called directly on the input data, providing blazingly fast
+  validation based completely on pattern matching and guards.
   """
 
   @doc """
@@ -9,7 +24,8 @@ defmodule Exvalibur do
   ## Options
 
   - `module_name :: binary()` the name of the module to produce; when omitted, it will be looked up in current application options
-  - `merge :: boolean` when true, the existing rules are taken from the module (if exists) and being merged against current rules
+  - `merge :: boolean()` when true, the existing rules are taken from the module (if exists) and being merged against current rules
+  - `flow :: boolean()` when true, the underlying module generator uses [`Flow`](https://hexdocs.pm/flow) to process an input
 
   ## Example
 
@@ -34,16 +50,16 @@ defmodule Exvalibur do
 
   ## Unknown conditions
 
-  #    iex> rules = [
-  #    ...>   %{matches: %{currency_pair: "EURGBP"},
-  #    ...>     conditions: %{rate: %{perfect: true}}}]
-  #    ...> try do
-  #    ...>   Exvalibur.validator!(rules, module_name: Exvalibur.Validator2)
-  #    ...> rescue
-  #    ...>   e in [Exvalibur.Error] ->
-  #    ...>   e.reason
-  #    ...> end
-  #    %{unknown_guard: :perfect}
+      iex> rules = [
+      ...>   %{matches: %{currency_pair: "EURGBP"},
+      ...>     conditions: %{rate: %{perfect: true}}}]
+      ...> try do
+      ...>   Exvalibur.validator!(rules, module_name: Exvalibur.Validator2)
+      ...> rescue
+      ...>   e in [Exvalibur.Error] ->
+      ...>   e.reason
+      ...> end
+      %{unknown_guard: :perfect}
 
   When an unknown guard is passed to the rules conditions, compile-time error is produced
 
