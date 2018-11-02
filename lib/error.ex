@@ -30,4 +30,14 @@ defmodule Exvalibur.Error do
 
     %Exvalibur.Error{message: message, reason: reason}
   end
+
+  def exception(reason: %{empty_rule: rule} = reason) do
+    message = """
+      Empty rule #{inspect(rule)} in call to `Exvalibur.validator!/2`.
+
+      The rule must contain either `matches` or `conditions` field.
+    """
+
+    %Exvalibur.Error{message: message, reason: reason}
+  end
 end

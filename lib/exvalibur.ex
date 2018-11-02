@@ -16,6 +16,27 @@ defmodule Exvalibur do
   handling-all clause.) Once generated, the `valid?/1` function of the module
   generated might be called directly on the input data, providing blazingly fast
   validation based completely on pattern matching and guards.
+
+  One should privide at least one match or condition:
+
+      iex> rules = [%{matches: %{currency_pair: "EURUSD"}}]
+      ...> Exvalibur.validator!(rules, module_name: Exvalibur.MatchValidator)
+      ...> Exvalibur.MatchValidator.valid?(%{currency_pair: "EURUSD", rate: 1.5})
+      {:ok, %{currency_pair: "EURUSD"}}
+
+      iex> rules = [%{conditions: %{rate: %{eq: 1.5}}}]
+      ...> Exvalibur.validator!(rules, module_name: Exvalibur.ConditionValidator)
+      ...> Exvalibur.ConditionValidator.valid?(%{currency_pair: "EURGBP", rate: 1.5})
+      {:ok, %{rate: 1.5}}
+
+      iex> rules = [%{foo: :bar}]
+      ...> try do
+      ...>   Exvalibur.validator!(rules, module_name: Exvalibur.RaisingValidator)
+      ...> rescue
+      ...>   e in [Exvalibur.Error] ->
+      ...>   e.reason
+      ...> end
+      %{empty_rule: %{foo: :bar}}
   """
 
   @doc """
@@ -54,7 +75,7 @@ defmodule Exvalibur do
       ...>   %{matches: %{currency_pair: "EURGBP"},
       ...>     conditions: %{rate: %{perfect: true}}}]
       ...> try do
-      ...>   Exvalibur.validator!(rules, module_name: Exvalibur.Validator2)
+      ...>   Exvalibur.validator!(rules, module_name: Exvalibur.Validator)
       ...> rescue
       ...>   e in [Exvalibur.Error] ->
       ...>   e.reason
@@ -74,10 +95,10 @@ defmodule Exvalibur do
       ...>     conditions: %{
       ...>       rate: %{min: 1.0, max: 2.0},
       ...>       source: %{one_of: ["FOO", "BAR"]}}}]
-      ...> Exvalibur.validator!(rules, module_name: Exvalibur.Validator3, merge: false)
-      ...> Exvalibur.Validator3.valid?(%{currency_pair: "EURGBP", any: 42, rate: 1.5, source: "FOO"})
+      ...> Exvalibur.validator!(rules, module_name: Exvalibur.Validator, merge: false)
+      ...> Exvalibur.Validator.valid?(%{currency_pair: "EURGBP", any: 42, rate: 1.5, source: "FOO"})
       {:ok, %{currency_pair: "EURGBP", rate: 1.5, source: "FOO"}}
-      iex> Exvalibur.Validator3.valid?(%{currency_pair: "EURUSD", any: 42, rate: 1.5, source: "BAH"})
+      iex> Exvalibur.Validator.valid?(%{currency_pair: "EURUSD", any: 42, rate: 1.5, source: "BAH"})
       :error
   """
   @spec validator!(rules :: list(), opts :: list()) :: {:module, module(), binary(), term()}
@@ -147,14 +168,32 @@ defmodule Exvalibur do
       end)
 
     [
-      quote do
-        def valid?(unquote(matches_and_conditions))
-            when unquote(guards),
-            do: {:ok, unquote(matches_and_conditions)}
+      case guards do
+        [] ->
+          quote do
+            def valid?(unquote(matches_and_conditions)),
+              do: {:ok, unquote(matches_and_conditions)}
+          end
+
+        _ ->
+          quote do
+            def valid?(unquote(matches_and_conditions))
+                when unquote(guards),
+                do: {:ok, unquote(matches_and_conditions)}
+          end
       end
       | acc
     ]
   end
+
+  defp reducer(%{matches: matches}, acc),
+    do: reducer(%{matches: matches, conditions: %{}}, acc)
+
+  defp reducer(%{conditions: conditions}, acc),
+    do: reducer(%{matches: %{}, conditions: conditions}, acc)
+
+  defp reducer(%{} = rule, _acc),
+    do: raise(Exvalibur.Error, reason: %{empty_rule: rule})
 
   @spec transformer(rules :: list(), :flow | :enum) :: list()
   defp transformer(rules, :flow) do
