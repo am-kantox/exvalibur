@@ -89,6 +89,27 @@ defmodule ExvaliburTest do
     assert TestValidatorPMS.valid?(%{foo: 42}) == :error
   end
 
+  test "rules with pattern matching (complicated)" do
+    rules = [%{matches: %{foo: ~V[%{} = _]}}]
+
+    Exvalibur.validator!(rules, module_name: TestValidatorPMCS)
+
+    assert TestValidatorPMCS.valid?(%{foo: %{bar: "baz"}}) == {:ok, %{foo: %{bar: "baz"}}}
+    assert TestValidatorPMCS.valid?(%{foo: "zzz"}) == :error
+  end
+
+  test "rules with pattern matching (interpolated sigil)" do
+    letter = "b"
+    rules = [%{matches: %{foo: ~v[<<"#{letter}", _::binary>>]}}]
+
+    Exvalibur.validator!(rules, module_name: TestValidatorPMIS)
+
+    assert TestValidatorPMIS.valid?(%{foo: "bar"}) == {:ok, %{foo: "bar"}}
+    assert TestValidatorPMIS.valid?(%{foo: "baz", bar: 42}) == {:ok, %{foo: "baz"}}
+    assert TestValidatorPMIS.valid?(%{foo: "zzz"}) == :error
+    assert TestValidatorPMIS.valid?(%{foo: 42}) == :error
+  end
+
   test "bad sigil" do
     # This will result in compile-time error, so no way to assert properly
     # assert_raise TokenMissingError, ~s|missing terminator: "|, ~V[<<"b, _::binary>>]
