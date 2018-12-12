@@ -16,7 +16,7 @@ defmodule Exvalibur.Guards do
 
           def min_length(var, val) when is_integer(val) do
             quote do
-              is_bitstring(unquote(var)) and bytesize(unquote(var)) >= unquote(val)
+              is_bitstring(unquote(var)) and byte_size(unquote(var)) >= unquote(val)
             end
           end
         end
@@ -60,12 +60,12 @@ defmodule Exvalibur.Guards do
     @doc "Guard for conditions like `%{min_length: 10}`, checks the byte length of the binary parameter"
     @spec min_length(any(), integer()) :: {:and, list(), list()}
     def min_length(var, val) when is_integer(val),
-      do: quote(do: is_bitstring(unquote(var)) and bytesize(unquote(var)) >= unquote(val))
+      do: quote(do: is_bitstring(unquote(var)) and byte_size(unquote(var)) >= unquote(val))
 
     @doc "Guard for conditions like `%{max_length: 10}`, checks the byte length of the binary parameter"
     @spec max_length(any(), integer()) :: {:and, list(), list()}
     def max_length(var, val) when is_integer(val),
-      do: quote(do: is_bitstring(unquote(var)) and bytesize(unquote(var)) <= unquote(val))
+      do: quote(do: is_bitstring(unquote(var)) and byte_size(unquote(var)) <= unquote(val))
 
     @doc "Guard for conditions like `%{min_count: 10}`, checks the number of elements in list parameter"
     @spec min_count(any(), integer()) :: {:and, list(), list()}

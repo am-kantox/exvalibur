@@ -86,6 +86,25 @@ defmodule ExvaliburTest do
 
   ##############################################################################
 
+  test "arbitrary guards" do
+    rules = [
+      %{
+        matches: %{foo: "bar", num: ~Q[num]},
+        guards: %{is_percent: "num >= 0 and num <= 100"}
+      }
+    ]
+
+    Exvalibur.validator!(rules, module_name: TestValidatorAG, merge: false)
+
+    assert TestValidatorAG.valid?(%{foo: "bar", num: 42, bar: 42}) ==
+             {:ok, %{foo: "bar", num: 42}}
+
+    assert TestValidatorAG.valid?(%{foo: "bar", num: 101}) == :error
+    assert TestValidatorAG.valid?(%{foo: "zzz", num: 42}) == :error
+    assert TestValidatorAG.valid?(%{foo: 42}) == :error
+  end
+
+  ##############################################################################
   test "rules with pattern matching" do
     rules = [%{matches: %{foo: quote(do: <<"b", _::binary>>)}}]
 
@@ -98,7 +117,7 @@ defmodule ExvaliburTest do
   end
 
   test "rules with pattern matching (sigil)" do
-    rules = [%{matches: %{foo: ~V[<<"b", _::binary>>]}}]
+    rules = [%{matches: %{foo: ~Q[<<"b", _::binary>>]}}]
 
     Exvalibur.validator!(rules, module_name: TestValidatorPMS)
 
@@ -109,7 +128,7 @@ defmodule ExvaliburTest do
   end
 
   test "rules with pattern matching (complicated)" do
-    rules = [%{matches: %{foo: ~V[%{} = _]}}]
+    rules = [%{matches: %{foo: ~Q[%{} = _]}}]
 
     Exvalibur.validator!(rules, module_name: TestValidatorPMCS)
 
@@ -119,7 +138,7 @@ defmodule ExvaliburTest do
 
   test "rules with pattern matching (interpolated sigil)" do
     letter = "b"
-    rules = [%{matches: %{foo: ~v[<<"#{letter}", _::binary>>]}}]
+    rules = [%{matches: %{foo: ~q[<<"#{letter}", _::binary>>]}}]
 
     Exvalibur.validator!(rules, module_name: TestValidatorPMIS)
 
@@ -131,6 +150,6 @@ defmodule ExvaliburTest do
 
   test "bad sigil" do
     # This will result in compile-time error, so no way to assert properly
-    # assert_raise TokenMissingError, ~s|missing terminator: "|, ~V[<<"b, _::binary>>]
+    # assert_raise TokenMissingError, ~s|missing terminator: "|, ~Q[<<"b, _::binary>>]
   end
 end

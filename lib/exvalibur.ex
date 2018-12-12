@@ -121,6 +121,8 @@ defmodule Exvalibur do
     Module.create(name, ast(rules, current_rules, processor), Macro.Env.location(__ENV__))
   end
 
+  @known_fields ~w|matches conditions guards|a
+
   @doc false
   @spec get_or_create_module_name(
           opts :: Keyword.t(),
@@ -144,18 +146,18 @@ defmodule Exvalibur do
   end
 
   @spec reducer(map(), acc :: list()) :: list()
-  defp reducer(%{matches: matches, conditions: conditions}, acc)
-       when is_map(matches) and is_binary(conditions) and is_list(acc) do
+  defp reducer(%{matches: matches, conditions: conditions, guards: guards}, acc)
+       when is_map(matches) and is_binary(conditions) and is_map(guards) and is_list(acc) do
     conditions =
       conditions
       |> Code.string_to_quoted!()
       |> Exvalibur.Guards.guards_module().traverse_conditions()
 
-    reducer(%{matches: matches, conditions: conditions}, acc)
+    reducer(%{matches: matches, conditions: conditions, guards: guards}, acc)
   end
 
-  defp reducer(%{matches: matches, conditions: conditions}, acc)
-       when is_map(matches) and is_map(conditions) and is_list(acc) do
+  defp reducer(%{matches: matches, conditions: conditions, guards: guards}, acc)
+       when is_map(matches) and is_map(conditions) and is_map(guards) and is_list(acc) do
     matches_and_conditions_keys = Map.keys(conditions)
 
     matches_and_conditions =
@@ -166,13 +168,19 @@ defmodule Exvalibur do
 
     matches_and_conditions_keys = matches_and_conditions_keys ++ Map.keys(matches)
 
-    guards =
-      for {var, guards} <- conditions, {guard, val} <- guards do
+    conditional_guards =
+      for {var, conditional_guards} <- conditions, {guard, val} <- conditional_guards do
         unless Exvalibur.Guards.guard?(guard),
           do: raise(Exvalibur.Error, reason: %{unknown_guard: guard})
 
         Exvalibur.Guards.guard!(guard, __MODULE__, var, val)
       end
+
+    conditional_guards =
+      guards
+      |> Enum.reduce(conditional_guards, fn {_name, guard}, conditional_guards ->
+        [guard_to_ast(guard) | conditional_guards]
+      end)
       |> Enum.reduce([], fn
         guard, [] ->
           guard
@@ -182,7 +190,7 @@ defmodule Exvalibur do
       end)
 
     [
-      case guards do
+      case conditional_guards do
         [] ->
           quote do
             def valid?(unquote(matches_and_conditions) = input),
@@ -192,7 +200,7 @@ defmodule Exvalibur do
         _ ->
           quote do
             def valid?(unquote(matches_and_conditions) = input)
-                when unquote(guards),
+                when unquote(conditional_guards),
                 do: {:ok, Map.take(input, unquote(matches_and_conditions_keys))}
           end
       end
@@ -200,14 +208,31 @@ defmodule Exvalibur do
     ]
   end
 
-  defp reducer(%{matches: matches}, acc) when is_map(matches) and is_list(acc),
-    do: reducer(%{matches: matches, conditions: %{}}, acc)
+  defp reducer(matches_conditions_guards, acc)
+       when is_map(matches_conditions_guards) and is_list(acc) do
+    matches_conditions_guards_empty? =
+      Enum.reduce(@known_fields, true, &(&2 and empty?(matches_conditions_guards[&1])))
 
-  defp reducer(%{conditions: conditions}, acc) when is_map(conditions) and is_list(acc),
-    do: reducer(%{matches: %{}, conditions: conditions}, acc)
+    if matches_conditions_guards_empty?,
+      do: raise(Exvalibur.Error, reason: %{empty_rule: matches_conditions_guards})
 
-  defp reducer(rule, _acc) when is_map(rule),
-    do: raise(Exvalibur.Error, reason: %{empty_rule: rule})
+    matches_conditions_guards =
+      Enum.reduce(@known_fields, matches_conditions_guards, &Map.put_new(&2, &1, %{}))
+
+    reducer(matches_conditions_guards, acc)
+  end
+
+  @spec empty?(group :: nil | binary() | map()) :: true | false
+  def empty?(nil), do: true
+  def empty?(map) when is_map(map) and map_size(map) == 0, do: true
+  def empty?(string) when is_binary(string) and byte_size(string) == 0, do: true
+  def empty?(_), do: false
+
+  @spec guard_to_ast(guard :: binary() | tuple()) :: any()
+  def guard_to_ast(string) when is_binary(string),
+    do: Code.string_to_quoted!(string)
+
+  def guard_to_ast({_, _, _} = ast), do: ast
 
   @spec transformer(rules :: list(), :flow | :enum) :: list()
   defp transformer(rules, :flow) when is_list(rules) do

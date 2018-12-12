@@ -1,43 +1,43 @@
 defmodule Exvalibur.Sigils do
   @moduledoc """
-  Implementation of sigils `~v` and `~V` to allow patterns inside `matches` in `rules`.
+  Implementation of sigils `~q` and `~Q` to allow patterns inside `matches` in `rules`.
 
   Import this module to get an access to sigils.
   """
 
   @doc ~S"""
-  Handles the sigil `~V` for non-interpolated match expressions.
+  Handles the sigil `~Q` for non-interpolated match expressions.
 
   It returns an AST that might be used as is in `Exvalibur.validator!/2`’s rules.
 
   ## Examples
       iex> import Exvalibur.Sigils
-      iex> ~V[%{} = _]
+      iex> ~Q[%{} = _]
       {:=, [line: 15], [{:%{}, [line: 15], []}, {:_, [line: 15], nil}]}
-      iex> ~V[<<"foo", _ :: binary>>]
+      iex> ~Q[<<"foo", _ :: binary>>]
       {:<<>>, [line: 14],
         ["foo", {:::, [line: 14], [{:_, [line: 14], nil}, {:binary, [line: 14], nil}]}]}
-      iex> ~V[<<invalid]
+      iex> ~Q[<<invalid]
       ** (TokenMissingError) nofile:14: missing terminator: >> (for "<<" starting at line 14)
   """
-  @spec sigil_V(term :: binary(), modifiers :: list()) :: any()
-  defmacro sigil_V(term, modifiers)
+  @spec sigil_Q(term :: binary(), modifiers :: list()) :: any()
+  defmacro sigil_Q(term, modifiers)
 
-  defmacro sigil_V({:<<>>, meta, [string]}, []) when is_binary(string) do
+  defmacro sigil_Q({:<<>>, meta, [string]}, []) when is_binary(string) do
     quote bind_quoted: [string: string, meta: meta] do
       Code.string_to_quoted!(string, meta)
     end
   end
 
   @doc ~S"""
-  Handles the sigil `~v` for interpolated match expressions.
+  Handles the sigil `~q` for interpolated match expressions.
 
-  It behaves exactly as `sigil_V` save for it interpolates the string passed to sigil.
+  It behaves exactly as `sigil_Q` save for it interpolates the string passed to sigil.
   """
-  @spec sigil_v(term :: binary(), modifiers :: list()) :: any()
-  defmacro sigil_v(term, modifiers)
+  @spec sigil_q(term :: binary(), modifiers :: list()) :: any()
+  defmacro sigil_q(term, modifiers)
 
-  defmacro sigil_v({:<<>>, meta, [string]}, []) when is_binary(string) do
+  defmacro sigil_q({:<<>>, meta, [string]}, []) when is_binary(string) do
     quote bind_quoted: [string: string, meta: meta] do
       string
       |> :elixir_interpolation.unescape_chars()
@@ -45,7 +45,7 @@ defmodule Exvalibur.Sigils do
     end
   end
 
-  defmacro sigil_v({:<<>>, meta, pieces}, []) do
+  defmacro sigil_q({:<<>>, meta, pieces}, []) do
     tokens =
       case :elixir_interpolation.unescape_tokens(pieces) do
         {:ok, unescaped_tokens} -> unescaped_tokens
