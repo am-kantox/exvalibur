@@ -107,6 +107,27 @@ defmodule ExvaliburTest do
     assert TestValidatorAG.valid?(%{foo: 42}) == :error
   end
 
+  test "arbitrary guards (as list)" do
+    rules = [
+      %{
+        matches: %{foo: "bar", num: ~Q[num]},
+        guards: ["num >= 0 and (num <= 100 or num == 200)"]
+      }
+    ]
+
+    Exvalibur.validator!(rules, module_name: TestValidatorAG, merge: false)
+
+    assert TestValidatorAG.valid?(%{foo: "bar", num: 42, bar: 42}) ==
+             {:ok, %{foo: "bar", num: 42}}
+
+    assert TestValidatorAG.valid?(%{foo: "bar", num: 200, bar: 42}) ==
+             {:ok, %{foo: "bar", num: 200}}
+
+    assert TestValidatorAG.valid?(%{foo: "bar", num: 101}) == :error
+    assert TestValidatorAG.valid?(%{foo: "zzz", num: 42}) == :error
+    assert TestValidatorAG.valid?(%{foo: 42}) == :error
+  end
+
   ##############################################################################
   test "rules with pattern matching" do
     rules = [%{matches: %{foo: quote(do: <<"b", _::binary>>)}}]

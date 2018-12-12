@@ -208,6 +208,21 @@ defmodule Exvalibur do
     ]
   end
 
+  defp reducer(%{guards: guards} = matches_conditions_guards, acc)
+       when is_binary(guards) and is_list(acc) do
+    reducer(%{matches_conditions_guards | guards: [guards]}, acc)
+  end
+
+  defp reducer(%{guards: guards} = matches_conditions_guards, acc)
+       when is_list(guards) and is_list(acc) do
+    guards =
+      guards
+      |> Enum.with_index(1)
+      |> Enum.into(%{}, fn {guard, i} -> {:"guard_#{i}", guard} end)
+
+    reducer(%{matches_conditions_guards | guards: guards}, acc)
+  end
+
   defp reducer(matches_conditions_guards, acc)
        when is_map(matches_conditions_guards) and is_list(acc) do
     matches_conditions_guards_empty? =

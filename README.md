@@ -63,7 +63,6 @@ Starting with `v0.5.0` we support binary conditions for the declared guards.
 ```elixir
   import Exvalibur.Sigils
 
-  starting_with = "bar"
   rules = [%{conditions: "num >= 0 and num <= 100"}]
 
   Exvalibur.validator!(rules, module_name: TestValidator)
@@ -85,6 +84,28 @@ Any match expression allowed in function head matching clause is allowed here.
   assert TestValidator.valid?(%{foo: %{bar: "baz"}}) == {:ok, %{foo: %{bar: "baz"}}}
   assert TestValidator.valid?(%{foo: 42}) == :error
 ```
+
+## Custom Guards
+
+Starting with `v0.6.0` we support arbitrary custom guards in rules. The variables
+used in these guards should be explicitly declared under the `matches` key in rules,
+in the form `foo: ~Q[foo]`.
+
+```elixir
+  import Exvalibur.Sigils
+
+  rules = [%{
+    matches: %{num: ~Q[num]}
+    guards: ["num >= 0 and num <= 100"]
+  }]
+
+  Exvalibur.validator!(rules, module_name: TestValidator)
+
+  assert TestValidator.valid?(%{num: "bar"}) == :error
+  assert TestValidator.valid?(%{num: 200}) == :error
+  assert TestValidator.valid?(%{num: 42}) == {:ok, %{num: 42}}
+```
+
 
 ## Documentation
 
