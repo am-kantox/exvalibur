@@ -144,7 +144,8 @@ defmodule Exvalibur do
   end
 
   @spec reducer(map(), acc :: list()) :: list()
-  defp reducer(%{matches: matches, conditions: conditions}, acc) do
+  defp reducer(%{matches: matches, conditions: conditions}, acc)
+       when is_map(matches) and is_map(conditions) and is_list(acc) do
     matches_and_conditions_keys = Map.keys(conditions)
 
     matches_and_conditions =
@@ -189,26 +190,25 @@ defmodule Exvalibur do
     ]
   end
 
-  defp reducer(%{matches: matches}, acc),
+  defp reducer(%{matches: matches}, acc) when is_map(matches) and is_list(acc),
     do: reducer(%{matches: matches, conditions: %{}}, acc)
 
-  defp reducer(%{conditions: conditions}, acc),
+  defp reducer(%{conditions: conditions}, acc) when is_map(conditions) and is_list(acc),
     do: reducer(%{matches: %{}, conditions: conditions}, acc)
 
-  defp reducer(%{} = rule, _acc),
+  defp reducer(rule, _acc) when is_map(rule),
     do: raise(Exvalibur.Error, reason: %{empty_rule: rule})
 
   @spec transformer(rules :: list(), :flow | :enum) :: list()
-  defp transformer(rules, :flow) do
+  defp transformer(rules, :flow) when is_list(rules) do
     rules
     |> Flow.from_enumerable()
     |> Flow.reduce(fn -> [] end, &reducer/2)
     |> Enum.to_list()
   end
 
-  defp transformer(rules, :enum) do
-    Enum.reduce(rules, [], &reducer/2)
-  end
+  defp transformer(rules, :enum) when is_list(rules),
+    do: Enum.reduce(rules, [], &reducer/2)
 
   @spec ast(rules :: list(), current_rules :: map(), processor :: :flow | :enum) :: list()
   defp ast(rules, current_rules, processor)

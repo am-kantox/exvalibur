@@ -3,7 +3,7 @@ defmodule Exvalibur.MixProject do
 
   @app :exvalibur
   @app_name "exvalibur"
-  @version "0.4.1"
+  @version "0.4.2"
 
   def project do
     [
@@ -29,10 +29,10 @@ defmodule Exvalibur.MixProject do
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
-      {:nimble_csv, "~> 0.4"},
+      {:nimble_csv, "~> 0.5"},
       {:gen_stage, "~> 0.14"},
       {:flow, "~> 0.14"},
-      {:credo, "~> 1.0.0-rc1", only: [:dev, :test], runtime: false},
+      {:credo, "~> 1.0.0", only: [:dev, :test], runtime: false},
       {:dialyxir, "~> 1.0.0-rc.3", only: [:dev], runtime: false},
       {:stream_data, "~> 0.4", only: :test},
       {:benchee, "~> 0.11", only: :dev},

@@ -20,6 +20,9 @@ defmodule Exvalibur.Sigils do
       iex> ~V[<<invalid]
       ** (TokenMissingError) nofile:14: missing terminator: >> (for "<<" starting at line 14)
   """
+  @spec sigil_V(term :: binary(), modifiers :: list()) :: any()
+  defmacro sigil_V(term, modifiers)
+
   defmacro sigil_V({:<<>>, meta, [string]}, []) when is_binary(string) do
     quote bind_quoted: [string: string, meta: meta] do
       Code.string_to_quoted!(string, meta)
@@ -31,6 +34,7 @@ defmodule Exvalibur.Sigils do
 
   It behaves exactly as `sigil_V` save for it interpolates the string passed to sigil.
   """
+  @spec sigil_v(term :: binary(), modifiers :: list()) :: any()
   defmacro sigil_v(term, modifiers)
 
   defmacro sigil_v({:<<>>, meta, [string]}, []) when is_binary(string) do
