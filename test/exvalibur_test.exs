@@ -5,6 +5,7 @@ defmodule ExvaliburTest do
   doctest Exvalibur
 
   import StreamData
+  import Exvalibur.Sigils
 
   setup_all do
     [
@@ -62,5 +63,34 @@ defmodule ExvaliburTest do
 
       assert TestValidatorGMM.valid?(item) == result
     end
+  end
+
+  ##############################################################################
+
+  test "rules with pattern matching" do
+    rules = [%{matches: %{foo: quote(do: <<"b", _::binary>>)}}]
+
+    Exvalibur.validator!(rules, module_name: TestValidatorPM)
+
+    assert TestValidatorPM.valid?(%{foo: "bar"}) == {:ok, %{foo: "bar"}}
+    assert TestValidatorPM.valid?(%{foo: "baz", bar: 42}) == {:ok, %{foo: "baz"}}
+    assert TestValidatorPM.valid?(%{foo: "zzz"}) == :error
+    assert TestValidatorPM.valid?(%{foo: 42}) == :error
+  end
+
+  test "rules with pattern matching (sigil)" do
+    rules = [%{matches: %{foo: ~V[<<"b", _::binary>>]}}]
+
+    Exvalibur.validator!(rules, module_name: TestValidatorPMS)
+
+    assert TestValidatorPMS.valid?(%{foo: "bar"}) == {:ok, %{foo: "bar"}}
+    assert TestValidatorPMS.valid?(%{foo: "baz", bar: 42}) == {:ok, %{foo: "baz"}}
+    assert TestValidatorPMS.valid?(%{foo: "zzz"}) == :error
+    assert TestValidatorPMS.valid?(%{foo: 42}) == :error
+  end
+
+  test "bad sigil" do
+    # This will result in compile-time error, so no way to assert properly
+    # assert_raise TokenMissingError, ~s|missing terminator: "|, ~V[<<"b, _::binary>>]
   end
 end

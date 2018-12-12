@@ -145,12 +145,15 @@ defmodule Exvalibur do
 
   @spec reducer(map(), acc :: list()) :: list()
   defp reducer(%{matches: matches, conditions: conditions}, acc) do
+    matches_and_conditions_keys = Map.keys(conditions)
+
     matches_and_conditions =
       {:%{}, [],
-       conditions
-       |> Map.keys()
-       |> Enum.map(&{&1, Macro.var(&1, __MODULE__)})
-       |> Kernel.++(Map.to_list(matches))}
+       matches_and_conditions_keys
+       |> Enum.reduce(matches, &Map.put_new(&2, &1, Macro.var(&1, __MODULE__)))
+       |> Map.to_list()}
+
+    matches_and_conditions_keys = matches_and_conditions_keys ++ Map.keys(matches)
 
     guards =
       for {var, guards} <- conditions, {guard, val} <- guards do
@@ -171,15 +174,15 @@ defmodule Exvalibur do
       case guards do
         [] ->
           quote do
-            def valid?(unquote(matches_and_conditions)),
-              do: {:ok, unquote(matches_and_conditions)}
+            def valid?(unquote(matches_and_conditions) = input),
+              do: {:ok, Map.take(input, unquote(matches_and_conditions_keys))}
           end
 
         _ ->
           quote do
-            def valid?(unquote(matches_and_conditions))
+            def valid?(unquote(matches_and_conditions) = input)
                 when unquote(guards),
-                do: {:ok, unquote(matches_and_conditions)}
+                do: {:ok, Map.take(input, unquote(matches_and_conditions_keys))}
           end
       end
       | acc
