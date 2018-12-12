@@ -90,7 +90,7 @@ defmodule ExvaliburTest do
     rules = [
       %{
         matches: %{foo: "bar", num: ~Q[num]},
-        guards: %{is_percent: "num >= 0 and num <= 100"}
+        guards: %{is_percent: "num >= 0 and (num <= 100 or num == 200)"}
       }
     ]
 
@@ -98,6 +98,9 @@ defmodule ExvaliburTest do
 
     assert TestValidatorAG.valid?(%{foo: "bar", num: 42, bar: 42}) ==
              {:ok, %{foo: "bar", num: 42}}
+
+    assert TestValidatorAG.valid?(%{foo: "bar", num: 200, bar: 42}) ==
+             {:ok, %{foo: "bar", num: 200}}
 
     assert TestValidatorAG.valid?(%{foo: "bar", num: 101}) == :error
     assert TestValidatorAG.valid?(%{foo: "zzz", num: 42}) == :error
