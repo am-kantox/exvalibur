@@ -83,8 +83,9 @@ defmodule Exvalibur.Guards do
     @spec traverse_conditions(ast :: any(), acc :: map()) :: map()
     def traverse_conditions(ast, acc \\ %{})
 
-    def traverse_conditions({:and, _, ast}, acc) when is_list(ast),
-      do: Enum.reduce(ast, acc, &traverse_conditions/2)
+    def traverse_conditions({:and, _, ast}, acc) when is_list(ast) do
+      Enum.reduce(ast, acc, &traverse_conditions/2)
+    end
 
     def traverse_conditions({:or, _, _}, _),
       do: raise(Exvalibur.Error, reason: %{not_yet_supported: :or_clause})
@@ -134,8 +135,8 @@ defmodule Exvalibur.Guards do
            do: result
     end
 
-    def traverse_conditions({:==, _, [{_, _, _}, _]} = ast, acc),
-      do: traverse_conditions(ast, acc)
+    def traverse_conditions({:==, meta, ast}, acc),
+      do: traverse_conditions({:=, meta, ast}, acc)
 
     def traverse_conditions({:in, _, [var, value]}, acc) do
       with {_, result} <-

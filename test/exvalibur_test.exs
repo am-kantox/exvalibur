@@ -70,7 +70,7 @@ defmodule ExvaliburTest do
     rules = [
       %{
         matches: %{foo: "bar"},
-        conditions: "num >= 0 and num <= 100"
+        conditions: "num >= 0 and num <= 100 and num == 42"
       }
     ]
 
