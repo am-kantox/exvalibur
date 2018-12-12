@@ -193,15 +193,15 @@ defmodule Exvalibur do
       case conditional_guards do
         [] ->
           quote do
-            def valid?(unquote(matches_and_conditions) = input),
-              do: {:ok, Map.take(input, unquote(matches_and_conditions_keys))}
+            def valid?(unquote(matches_and_conditions) = mâp),
+              do: {:ok, Map.take(mâp, unquote(matches_and_conditions_keys))}
           end
 
         _ ->
           quote do
-            def valid?(unquote(matches_and_conditions) = input)
+            def valid?(unquote(matches_and_conditions) = mâp)
                 when unquote(conditional_guards),
-                do: {:ok, Map.take(input, unquote(matches_and_conditions_keys))}
+                do: {:ok, Map.take(mâp, unquote(matches_and_conditions_keys))}
           end
       end
       | acc
