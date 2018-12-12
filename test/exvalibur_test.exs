@@ -3,6 +3,7 @@ defmodule ExvaliburTest do
   use ExUnitProperties
 
   doctest Exvalibur
+  doctest Exvalibur.Sigils
 
   import StreamData
   import Exvalibur.Sigils
