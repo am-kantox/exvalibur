@@ -3,7 +3,7 @@ defmodule Exvalibur.MixProject do
 
   @app :exvalibur
   @app_name "exvalibur"
-  @version "0.4.2"
+  @version "0.5.0"
 
   def project do
     [
@@ -41,7 +41,6 @@ defmodule Exvalibur.MixProject do
     ]
   end
 
-
   defp description do
     """
     The generator of blazingly fast validator for map input.
@@ -69,7 +68,7 @@ defmodule Exvalibur.MixProject do
       logo: "stuff/logo-48x48.png",
       source_url: "https://github.com/am-kantox/#{@app}",
       extras: [
-        "stuff/#{@app_name}.md",
+        "stuff/#{@app_name}.md"
         # "stuff/backends.md"
       ],
       groups_for_modules: [

@@ -66,6 +66,24 @@ defmodule ExvaliburTest do
     end
   end
 
+  test "Guards.Default#min/2 and Guards.Default#max/2 (binary guards)" do
+    rules = [
+      %{
+        matches: %{foo: "bar"},
+        conditions: "num >= 0 and num <= 100"
+      }
+    ]
+
+    Exvalibur.validator!(rules, module_name: TestValidatorGMMS, merge: false)
+
+    assert TestValidatorGMMS.valid?(%{foo: "bar", num: 42, bar: 42}) ==
+             {:ok, %{foo: "bar", num: 42}}
+
+    assert TestValidatorGMMS.valid?(%{foo: "bar", num: 101}) == :error
+    assert TestValidatorGMMS.valid?(%{foo: "zzz", num: 42}) == :error
+    assert TestValidatorGMMS.valid?(%{foo: 42}) == :error
+  end
+
   ##############################################################################
 
   test "rules with pattern matching" do

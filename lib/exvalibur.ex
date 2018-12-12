@@ -145,6 +145,16 @@ defmodule Exvalibur do
 
   @spec reducer(map(), acc :: list()) :: list()
   defp reducer(%{matches: matches, conditions: conditions}, acc)
+       when is_map(matches) and is_binary(conditions) and is_list(acc) do
+    conditions =
+      conditions
+      |> Code.string_to_quoted!()
+      |> Exvalibur.Guards.guards_module().traverse_conditions()
+
+    reducer(%{matches: matches, conditions: conditions}, acc)
+  end
+
+  defp reducer(%{matches: matches, conditions: conditions}, acc)
        when is_map(matches) and is_map(conditions) and is_list(acc) do
     matches_and_conditions_keys = Map.keys(conditions)
 

@@ -40,7 +40,7 @@ Exvalibur.Validator.valid?(%{currency_pair: "EURUSD", rate: 1.5})
 
 ## Sigils To Pattern Match Data
 
-Starting with `0.4.0` we support `~v` and `~V` sigils to use validator with
+Starting with `v0.4.0` we support `~v` and `~V` sigils to use validator with
 pattern matching.
 
 ```elixir
@@ -54,6 +54,23 @@ pattern matching.
   assert TestValidator.valid?(%{foo: "bar"}) == {:ok, %{foo: "bar"}}
   assert TestValidator.valid?(%{foo: "zzz"}) == :error
   assert TestValidator.valid?(%{foo: 42}) == :error
+```
+
+## Binary Conditions
+
+Starting with `v0.5.0` we support binary conditions for the declared guards.
+
+```elixir
+  import Exvalibur.Sigils
+
+  starting_with = "bar"
+  rules = [%{conditions: "num >= 0 and num <= 100"}]
+
+  Exvalibur.validator!(rules, module_name: TestValidator)
+
+  assert TestValidator.valid?(%{num: "bar"}) == :error
+  assert TestValidator.valid?(%{num: 200}) == :error
+  assert TestValidator.valid?(%{num: 42}) == {:ok, %{num: 42}}
 ```
 
 Any match expression allowed in function head matching clause is allowed here.
