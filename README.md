@@ -95,7 +95,7 @@ in the form `foo: ~Q[foo]`.
   import Exvalibur.Sigils
 
   rules = [%{
-    matches: %{num: ~Q[num]}
+    matches: %{num: ~Q[num]},
     guards: ["num >= 0 and num <= 100"]
   }]
 

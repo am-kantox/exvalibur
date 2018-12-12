@@ -3,7 +3,7 @@ defmodule Exvalibur.MixProject do
 
   @app :exvalibur
   @app_name "exvalibur"
-  @version "0.6.0"
+  @version "0.6.1"
 
   def project do
     [

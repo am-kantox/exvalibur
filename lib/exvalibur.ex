@@ -238,16 +238,14 @@ defmodule Exvalibur do
   end
 
   @spec empty?(group :: nil | binary() | map()) :: true | false
-  def empty?(nil), do: true
-  def empty?(map) when is_map(map) and map_size(map) == 0, do: true
-  def empty?(string) when is_binary(string) and byte_size(string) == 0, do: true
-  def empty?(_), do: false
+  defp empty?(nil), do: true
+  defp empty?(map) when is_map(map) and map_size(map) == 0, do: true
+  defp empty?(string) when is_binary(string) and byte_size(string) == 0, do: true
+  defp empty?(_), do: false
 
   @spec guard_to_ast(guard :: binary() | tuple()) :: any()
-  def guard_to_ast(string) when is_binary(string),
-    do: Code.string_to_quoted!(string)
-
-  def guard_to_ast({_, _, _} = ast), do: ast
+  defp guard_to_ast(string) when is_binary(string), do: Code.string_to_quoted!(string)
+  defp guard_to_ast({_, _, _} = ast), do: ast
 
   @spec transformer(rules :: list(), :flow | :enum) :: list()
   defp transformer(rules, :flow) when is_list(rules) do
