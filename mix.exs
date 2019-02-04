@@ -35,8 +35,7 @@ defmodule Exvalibur.MixProject do
       {:credo, "~> 1.0.0", only: [:dev, :test], runtime: false},
       {:dialyxir, "~> 1.0.0-rc.3", only: [:dev], runtime: false},
       {:stream_data, "~> 0.4", only: :test},
-      {:benchee, "~> 0.11", only: :dev},
-      {:benchee_csv, "~> 0.7", only: :dev},
+      {:benchfella, "~> 0.3", only: :dev, runtime: false},
       {:ex_doc, "~> 0.19", only: :dev, runtime: false}
     ]
   end
