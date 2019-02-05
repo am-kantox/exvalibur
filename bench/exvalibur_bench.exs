@@ -2,18 +2,18 @@ defmodule Exvalibur.Bench do
   use Benchfella
   import Exvalibur.Sigils
 
-  setup_all do
-    rules = [
-      %{
-        matches: %{foo: "bar", num: ~Q[num]},
-        guards: ["num >= 0 and (num <= 100 or num == 200)"]
-      }
-    ]
+  @rules [
+    %{
+      matches: %{foo: "bar", num: ~Q[num]},
+      guards: ["num >= 0 and (num <= 100 or num == 200)"]
+    }
+  ]
 
-    {:ok, Exvalibur.validator!(rules, module_name: PersistentValidator, merge: false)}
+  setup_all do
+    {:ok, Exvalibur.validator!(@rules, module_name: PersistentValidator, merge: false)}
   end
 
-  teardown_all mod do
+  teardown_all _mod do
   end
 
   defp explicit_checker(map) do
@@ -21,14 +21,7 @@ defmodule Exvalibur.Bench do
   end
 
   bench "Exvalibur.validator!/3" do
-    rules = [
-      %{
-        matches: %{foo: "bar", num: ~Q[num]},
-        guards: ["num >= 0 and (num <= 100 or num == 200)"]
-      }
-    ]
-
-    Exvalibur.validator!(rules, module_name: TestValidator, merge: false)
+    Exvalibur.validator!(@rules, module_name: TestValidator, merge: false)
   end
 
   bench "PersistentValidator.valid?" do
