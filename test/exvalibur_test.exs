@@ -18,6 +18,27 @@ defmodule ExvaliburTest do
     ]
   end
 
+  test "empty rules allow everything", ctx do
+    rules = []
+
+    Exvalibur.validator!(rules, module_name: TestValidatorEmpty)
+
+    check all item <- ctx[:data], max_runs: 100 do
+      assert TestValidatorEmpty.valid?(item) == {:ok, %{foo: item.foo, num: item.num}}
+    end
+  end
+
+  test "empty rules preserve previous rules", ctx do
+    rules = [%{matches: %{foo: "bar"}}]
+    Exvalibur.validator!(rules, module_name: TestValidatorEmptied)
+    Exvalibur.validator!([], module_name: TestValidatorEmptied)
+
+    check all item <- ctx[:data], max_runs: 100 do
+      assert TestValidatorEmptied.valid?(item) ==
+               if(item.foo == "bar", do: {:ok, %{foo: "bar"}}, else: :error)
+    end
+  end
+
   test "rules with matches only", ctx do
     rules = [%{matches: %{foo: "bar"}}]
 
