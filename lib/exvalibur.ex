@@ -259,9 +259,17 @@ defmodule Exvalibur do
     do: Enum.reduce(rules, [], &reducer/2)
 
   @spec ast(rules :: list(), current_rules :: map(), processor :: :flow | :enum) :: list()
+  defp ast([], map, _) when is_map(map) and map_size(map) == 0 do
+    quote do
+      def valid?(any), do: {:ok, any}
+      def rules, do: []
+    end
+  end
+
   defp ast(rules, current_rules, processor)
        when is_list(rules) and is_map(current_rules) do
     # the latter takes precedence
+
     rules = Map.merge(current_rules, rules_to_map(rules))
 
     [
