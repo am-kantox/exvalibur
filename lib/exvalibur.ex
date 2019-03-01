@@ -101,24 +101,32 @@ defmodule Exvalibur do
       iex> Exvalibur.Validator.valid?(%{currency_pair: "EURUSD", any: 42, rate: 1.5, source: "BAH"})
       :error
   """
-  @spec validator!(rules :: list(), opts :: list()) :: {:module, module(), binary(), term()}
-  def validator!(rules, opts \\ []) when is_list(rules) and is_list(opts) do
+  @spec validator!(rules :: list() | MapSet.t(), opts :: list()) ::
+          {:module, module(), binary(), term()}
+  def validator!(rules, opts)
+
+  def validator!(rules, opts) when is_list(rules) and is_list(opts),
+    do: validator!(MapSet.new(rules), opts)
+
+  def validator!(%MapSet{} = rules, opts) when is_list(opts) do
     name = get_or_create_module_name(opts, :module_name, "Instance")
     merge = Keyword.get(opts, :merge, true)
     processor = if opts[:flow], do: :flow, else: :enum
 
-    current_rules =
-      if Code.ensure_compiled?(name) do
-        cr = if merge, do: apply(name, :rules, []), else: %{}
-        :code.purge(name)
-        :code.delete(name)
-        cr
-      else
-        # no previous rules
-        %{}
-      end
+    new_rules =
+      MapSet.union(
+        rules,
+        MapSet.new(
+          if Code.ensure_compiled?(name) do
+            cr = if merge, do: apply(name, :rules, [])
+            :code.purge(name)
+            :code.delete(name)
+            cr
+          end || []
+        )
+      )
 
-    Module.create(name, ast(rules, current_rules, processor), Macro.Env.location(__ENV__))
+    Module.create(name, ast(new_rules, processor), Macro.Env.location(__ENV__))
   end
 
   @known_fields ~w|matches conditions guards|a
@@ -136,13 +144,6 @@ defmodule Exvalibur do
          [{me, _, _} | _] = Application.started_applications(),
          nil <- Application.get_env(me, :exvalibur, %{})[key],
          do: Module.concat([Macro.camelize(to_string(me)), "Exvalibur", fallback])
-  end
-
-  @spec rules_to_map(rules :: list()) :: map()
-  defp rules_to_map(rules) when is_list(rules) do
-    for rule <- rules,
-        do: {:erlang.term_to_binary(rule), rule},
-        into: %{}
   end
 
   @spec reducer(map(), acc :: list()) :: list()
@@ -247,34 +248,29 @@ defmodule Exvalibur do
   defp guard_to_ast(string) when is_binary(string), do: Code.string_to_quoted!(string)
   defp guard_to_ast({_, _, _} = ast), do: ast
 
-  @spec transformer(rules :: list(), :flow | :enum) :: list()
-  defp transformer(rules, :flow) when is_list(rules) do
+  @spec transformer(rules :: MapSet.t(), :flow | :enum) :: list()
+  defp transformer(%MapSet{} = rules, :flow) do
     rules
     |> Flow.from_enumerable()
     |> Flow.reduce(fn -> [] end, &reducer/2)
     |> Enum.to_list()
   end
 
-  defp transformer(rules, :enum) when is_list(rules),
+  defp transformer(%MapSet{} = rules, :enum),
     do: Enum.reduce(rules, [], &reducer/2)
 
-  @spec ast(rules :: list(), current_rules :: map(), processor :: :flow | :enum) :: list()
-  defp ast(rules, current_rules, processor)
-       when is_list(rules) and is_map(current_rules) do
-    # the latter takes precedence
-    rules = Map.merge(current_rules, rules_to_map(rules))
-
+  @spec ast(rules :: MapSet.t(), processor :: :flow | :enum) :: list()
+  defp ast(%MapSet{} = rules, processor) do
     [
       quote do
         import Exvalibur.Guards
       end
       | rules
-        |> Map.values()
         |> transformer(processor)
         |> Kernel.++([
           quote do
             def valid?(_), do: :error
-            def rules, do: unquote(Macro.escape(rules))
+            def rules, do: unquote(Macro.escape(MapSet.to_list(rules)))
           end
         ])
     ]

@@ -172,6 +172,19 @@ defmodule ExvaliburTest do
     assert TestValidatorPMIS.valid?(%{foo: 42}) == :error
   end
 
+  test "rules are stored in the generated module" do
+    rules = [
+      %{
+        matches: %{num: ~Q[num]},
+        conditions: %{foo: %{min: 0, max: 100}},
+        guards: %{is_percent: "num >= 0 and (num <= 100 or num == 200)"}
+      }
+    ]
+
+    Exvalibur.validator!(rules, module_name: TestValidatorFULL, merge: false)
+    assert TestValidatorFULL.rules() == rules
+  end
+
   test "bad sigil" do
     # This will result in compile-time error, so no way to assert properly
     # assert_raise TokenMissingError, ~s|missing terminator: "|, ~Q[<<"b, _::binary>>]
