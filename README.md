@@ -106,6 +106,7 @@ in the form `foo: ~Q[foo]`.
   assert TestValidator.valid?(%{num: 42}) == {:ok, %{num: 42}}
 ```
 
+## Changelog
 
 ## Documentation
 
