@@ -260,6 +260,13 @@ defmodule Exvalibur do
     do: Enum.reduce(rules, [], &reducer/2)
 
   @spec ast(rules :: MapSet.t(), processor :: :flow | :enum) :: list()
+  defp ast(%MapSet{map: rules}, _) when map_size(rules) == 0 do
+    quote do
+      def valid?(any), do: {:ok, any}
+      def rules, do: []
+    end
+  end
+
   defp ast(%MapSet{} = rules, processor) do
     [
       quote do
