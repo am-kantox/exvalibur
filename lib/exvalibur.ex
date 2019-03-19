@@ -100,7 +100,109 @@ defmodule Exvalibur do
       {:ok, %{currency_pair: "EURGBP", rate: 1.5, source: "FOO"}}
       iex> Exvalibur.Validator.valid?(%{currency_pair: "EURUSD", any: 42, rate: 1.5, source: "BAH"})
       :error
+
+  ## Module-based validators
+
+      iex> defmodule Validator do
+      ...>   use Exvalibur, rules: [
+      ...>     %{
+      ...>       matches: %{currency_pair: <<"EUR", _ :: binary>>},
+      ...>       conditions: %{foo: %{min: 0, max: 100}},
+      ...>       guards: %{num: num > 0 and num < 100}}]
+      ...> end
+      iex> Validator.valid?(%{currency_pair: "EURUSD", foo: 50, num: 50})
+      {:ok, %{currency_pair: "EURUSD", foo: 50, num: 50}}
+      iex> Validator.valid?(%{currency_pair: "USDEUR", foo: 50, num: 50})
+      :error
   """
+
+  import Exvalibur.Sigils
+
+  defmacro __using__(opts), do: do_using(opts)
+
+  @spec do_using(opts :: Keyword.t()) :: term()
+  defp do_using(rules: rules), do: do_using(rules: rules, flow: :enum)
+
+  # [{:%{}, [line: 108],
+  #   [matches: {:%{}, [line: 109],
+  #      [currency_pair: {:<<>>, [line: 109], ["EUR", {:::, [line: 109],
+  #         [{:_, [line: 109], nil}, {:binary, [line: 109], nil}]}]}]},
+  #    conditions: {:%{}, [line: 110],
+  #      [foo: {:%{}, [line: 110], [min: 0, max: 100]}]},
+  #    guards: {:and, [line: 111],
+  #      [{:>, [line: 111], [{:num, [line: 111], nil}, 0]},
+  #       {:<, [line: 111], [{:num, [line: 111], nil}, 100]}]}]}]
+  defp do_using(rules: rules, flow: flow) when is_list(rules) and flow in [:enum, :flow] do
+    new_rules =
+      rules
+      |> Enum.map(fn
+        {:%{}, _, rule} ->
+          rule =
+            rule
+            |> Enum.into(%{})
+            |> get_and_update_in([:matches], fn
+              nil ->
+                :pop
+
+              {:%{}, _, list} = old when is_list(list) ->
+                matches =
+                  list
+                  |> Enum.map(fn {k, v} -> {k, ~q[#{Macro.to_string(v)}]} end)
+                  |> Enum.into(%{})
+
+                {old, matches}
+            end)
+            |> elem(1)
+            |> get_and_update_in([:conditions], fn
+              nil ->
+                :pop
+
+              {:%{}, _, list} = old when is_list(list) ->
+                conditions =
+                  list
+                  |> Enum.map(fn {k, {:%{}, _, vals}} -> {k, Enum.into(vals, %{})} end)
+                  |> Enum.into(%{})
+
+                {old, conditions}
+            end)
+            |> elem(1)
+            |> get_and_update_in([:guards], fn
+              nil ->
+                :pop
+
+              {:%{}, _, list} = old when is_list(list) ->
+                guards =
+                  list
+                  |> Enum.map(fn {k, guard} -> {k, Macro.to_string(guard)} end)
+                  |> Enum.into(%{})
+
+                {old, guards}
+            end)
+            |> elem(1)
+
+          rule
+          |> Map.get(:guards, [])
+          |> Map.keys()
+          |> case do
+            [] ->
+              rule
+
+            vars when is_list(vars) ->
+              Enum.reduce(vars, rule, fn var, acc ->
+                acc
+                |> get_and_update_in([:matches], fn
+                  nil -> {nil, %{var => ~q[#{var}]}}
+                  %{} = map -> {map, Map.put(map, var, ~q[#{var}])}
+                end)
+                |> elem(1)
+              end)
+          end
+      end)
+      |> MapSet.new()
+
+    ast(new_rules, flow)
+  end
+
   @spec validator!(rules :: list() | MapSet.t(), opts :: list()) ::
           {:module, module(), binary(), term()}
   def validator!(rules, opts)
