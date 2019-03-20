@@ -114,6 +114,10 @@ defmodule Exvalibur do
       {:ok, %{currency_pair: "EURUSD", foo: 50, num: 50}}
       iex> Validator.valid?(%{currency_pair: "USDEUR", foo: 50, num: 50})
       :error
+      iex> Validator.valid?(%{currency_pair: "EURUSD", foo: -50, num: 50})
+      :error
+      iex> Validator.valid?(%{currency_pair: "EURUSD", foo: 50, num: -50})
+      :error
   """
 
   import Exvalibur.Sigils

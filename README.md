@@ -106,7 +106,30 @@ in the form `foo: ~Q[foo]`.
   assert TestValidator.valid?(%{num: 42}) == {:ok, %{num: 42}}
 ```
 
+## Module-based validators
+
+```elixir
+defmodule Validator do
+  use Exvalibur, rules: [
+    %{
+      matches: %{currency_pair: <<"EUR", _ :: binary>>},
+      conditions: %{foo: %{min: 0, max: 100}},
+      guards: %{num: num > 0 and num < 100}}]
+end
+Validator.valid?(%{currency_pair: "EURUSD", foo: 50, num: 50})
+#⇒ {:ok, %{currency_pair: "EURUSD", foo: 50, num: 50}}
+
+Validator.valid?(%{currency_pair: "USDEUR", foo: 50, num: 50})
+#⇒ :error
+Validator.valid?(%{currency_pair: "EURUSD", foo: -50, num: 50})
+#⇒ :error
+Validator.valid?(%{currency_pair: "EURUSD", foo: 50, num: -50})
+#⇒ :error
+```
+
 ## Changelog
+
+#### `0.8.0` — module-based validators
 
 ## Documentation
 
