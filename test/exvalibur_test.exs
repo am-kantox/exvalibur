@@ -24,7 +24,7 @@ defmodule ExvaliburTest do
     Exvalibur.validator!(rules, module_name: TestValidatorEmpty)
 
     check all item <- ctx[:data], max_runs: 100 do
-      assert TestValidatorEmpty.valid?(item) == {:ok, %{foo: item.foo, num: item.num}}
+      assert TestValidatorEmpty.validate(item) == {:ok, %{foo: item.foo, num: item.num}}
     end
   end
 
@@ -34,7 +34,7 @@ defmodule ExvaliburTest do
     Exvalibur.validator!([], module_name: TestValidatorEmptied)
 
     check all item <- ctx[:data], max_runs: 100 do
-      assert TestValidatorEmptied.valid?(item) ==
+      assert TestValidatorEmptied.validate(item) ==
                if(item.foo == "bar", do: {:ok, %{foo: "bar"}}, else: :error)
     end
   end
@@ -45,7 +45,7 @@ defmodule ExvaliburTest do
     Exvalibur.validator!(rules, module_name: TestValidatorMO)
 
     check all item <- ctx[:data], max_runs: 100 do
-      assert TestValidatorMO.valid?(item) ==
+      assert TestValidatorMO.validate(item) ==
                if(item.foo == "bar", do: {:ok, %{foo: "bar"}}, else: :error)
     end
   end
@@ -56,7 +56,7 @@ defmodule ExvaliburTest do
     Exvalibur.validator!(rules, module_name: TestValidatorCO)
 
     check all item <- ctx[:data], max_runs: 100 do
-      assert TestValidatorCO.valid?(item) ==
+      assert TestValidatorCO.validate(item) ==
                if(item.num >= 0 and item.num <= 100, do: {:ok, %{num: item.num}}, else: :error)
     end
   end
@@ -83,7 +83,7 @@ defmodule ExvaliburTest do
             :error
         end
 
-      assert TestValidatorGMM.valid?(item) == result
+      assert TestValidatorGMM.validate(item) == result
     end
   end
 
@@ -97,12 +97,12 @@ defmodule ExvaliburTest do
 
     Exvalibur.validator!(rules, module_name: TestValidatorGMMS, merge: false)
 
-    assert TestValidatorGMMS.valid?(%{foo: "bar", num: 42, bar: 42}) ==
+    assert TestValidatorGMMS.validate(%{foo: "bar", num: 42, bar: 42}) ==
              {:ok, %{foo: "bar", num: 42}}
 
-    assert TestValidatorGMMS.valid?(%{foo: "bar", num: 101}) == :error
-    assert TestValidatorGMMS.valid?(%{foo: "zzz", num: 42}) == :error
-    assert TestValidatorGMMS.valid?(%{foo: 42}) == :error
+    assert TestValidatorGMMS.validate(%{foo: "bar", num: 101}) == :error
+    assert TestValidatorGMMS.validate(%{foo: "zzz", num: 42}) == :error
+    assert TestValidatorGMMS.validate(%{foo: 42}) == :error
   end
 
   ##############################################################################
@@ -117,15 +117,15 @@ defmodule ExvaliburTest do
 
     Exvalibur.validator!(rules, module_name: TestValidatorAG, merge: false)
 
-    assert TestValidatorAG.valid?(%{foo: "bar", num: 42, bar: 42}) ==
+    assert TestValidatorAG.validate(%{foo: "bar", num: 42, bar: 42}) ==
              {:ok, %{foo: "bar", num: 42}}
 
-    assert TestValidatorAG.valid?(%{foo: "bar", num: 200, bar: 42}) ==
+    assert TestValidatorAG.validate(%{foo: "bar", num: 200, bar: 42}) ==
              {:ok, %{foo: "bar", num: 200}}
 
-    assert TestValidatorAG.valid?(%{foo: "bar", num: 101}) == :error
-    assert TestValidatorAG.valid?(%{foo: "zzz", num: 42}) == :error
-    assert TestValidatorAG.valid?(%{foo: 42}) == :error
+    assert TestValidatorAG.validate(%{foo: "bar", num: 101}) == :error
+    assert TestValidatorAG.validate(%{foo: "zzz", num: 42}) == :error
+    assert TestValidatorAG.validate(%{foo: 42}) == :error
   end
 
   test "arbitrary guards (as list)" do
@@ -138,15 +138,15 @@ defmodule ExvaliburTest do
 
     Exvalibur.validator!(rules, module_name: TestValidatorAG, merge: false)
 
-    assert TestValidatorAG.valid?(%{foo: "bar", num: 42, bar: 42}) ==
+    assert TestValidatorAG.validate(%{foo: "bar", num: 42, bar: 42}) ==
              {:ok, %{foo: "bar", num: 42}}
 
-    assert TestValidatorAG.valid?(%{foo: "bar", num: 200, bar: 42}) ==
+    assert TestValidatorAG.validate(%{foo: "bar", num: 200, bar: 42}) ==
              {:ok, %{foo: "bar", num: 200}}
 
-    assert TestValidatorAG.valid?(%{foo: "bar", num: 101}) == :error
-    assert TestValidatorAG.valid?(%{foo: "zzz", num: 42}) == :error
-    assert TestValidatorAG.valid?(%{foo: 42}) == :error
+    assert TestValidatorAG.validate(%{foo: "bar", num: 101}) == :error
+    assert TestValidatorAG.validate(%{foo: "zzz", num: 42}) == :error
+    assert TestValidatorAG.validate(%{foo: 42}) == :error
   end
 
   ##############################################################################
@@ -155,10 +155,10 @@ defmodule ExvaliburTest do
 
     Exvalibur.validator!(rules, module_name: TestValidatorPM)
 
-    assert TestValidatorPM.valid?(%{foo: "bar"}) == {:ok, %{foo: "bar"}}
-    assert TestValidatorPM.valid?(%{foo: "baz", bar: 42}) == {:ok, %{foo: "baz"}}
-    assert TestValidatorPM.valid?(%{foo: "zzz"}) == :error
-    assert TestValidatorPM.valid?(%{foo: 42}) == :error
+    assert TestValidatorPM.validate(%{foo: "bar"}) == {:ok, %{foo: "bar"}}
+    assert TestValidatorPM.validate(%{foo: "baz", bar: 42}) == {:ok, %{foo: "baz"}}
+    assert TestValidatorPM.validate(%{foo: "zzz"}) == :error
+    assert TestValidatorPM.validate(%{foo: 42}) == :error
   end
 
   test "rules with pattern matching (sigil)" do
@@ -166,10 +166,10 @@ defmodule ExvaliburTest do
 
     Exvalibur.validator!(rules, module_name: TestValidatorPMS)
 
-    assert TestValidatorPMS.valid?(%{foo: "bar"}) == {:ok, %{foo: "bar"}}
-    assert TestValidatorPMS.valid?(%{foo: "baz", bar: 42}) == {:ok, %{foo: "baz"}}
-    assert TestValidatorPMS.valid?(%{foo: "zzz"}) == :error
-    assert TestValidatorPMS.valid?(%{foo: 42}) == :error
+    assert TestValidatorPMS.validate(%{foo: "bar"}) == {:ok, %{foo: "bar"}}
+    assert TestValidatorPMS.validate(%{foo: "baz", bar: 42}) == {:ok, %{foo: "baz"}}
+    assert TestValidatorPMS.validate(%{foo: "zzz"}) == :error
+    assert TestValidatorPMS.validate(%{foo: 42}) == :error
   end
 
   test "rules with pattern matching (complicated)" do
@@ -177,8 +177,8 @@ defmodule ExvaliburTest do
 
     Exvalibur.validator!(rules, module_name: TestValidatorPMCS)
 
-    assert TestValidatorPMCS.valid?(%{foo: %{bar: "baz"}}) == {:ok, %{foo: %{bar: "baz"}}}
-    assert TestValidatorPMCS.valid?(%{foo: "zzz"}) == :error
+    assert TestValidatorPMCS.validate(%{foo: %{bar: "baz"}}) == {:ok, %{foo: %{bar: "baz"}}}
+    assert TestValidatorPMCS.validate(%{foo: "zzz"}) == :error
   end
 
   test "rules with pattern matching (interpolated sigil)" do
@@ -187,10 +187,10 @@ defmodule ExvaliburTest do
 
     Exvalibur.validator!(rules, module_name: TestValidatorPMIS)
 
-    assert TestValidatorPMIS.valid?(%{foo: "bar"}) == {:ok, %{foo: "bar"}}
-    assert TestValidatorPMIS.valid?(%{foo: "baz", bar: 42}) == {:ok, %{foo: "baz"}}
-    assert TestValidatorPMIS.valid?(%{foo: "zzz"}) == :error
-    assert TestValidatorPMIS.valid?(%{foo: 42}) == :error
+    assert TestValidatorPMIS.validate(%{foo: "bar"}) == {:ok, %{foo: "bar"}}
+    assert TestValidatorPMIS.validate(%{foo: "baz", bar: 42}) == {:ok, %{foo: "baz"}}
+    assert TestValidatorPMIS.validate(%{foo: "zzz"}) == :error
+    assert TestValidatorPMIS.validate(%{foo: 42}) == :error
   end
 
   test "rules are stored in the generated module" do
@@ -204,6 +204,11 @@ defmodule ExvaliburTest do
 
     Exvalibur.validator!(rules, module_name: TestValidatorFULL, merge: false)
     assert TestValidatorFULL.rules() == rules
+  end
+
+  # prints out a deprecation warning
+  test "deprecated valid?/1" do
+    assert TestValidatorDeprecation.valid?(%{foo: 42}) == {:ok, %{foo: 42}}
   end
 
   test "bad sigil" do
