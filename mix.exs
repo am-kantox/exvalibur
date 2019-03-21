@@ -3,7 +3,7 @@ defmodule Exvalibur.MixProject do
 
   @app :exvalibur
   @app_name "exvalibur"
-  @version "0.8.0"
+  @version "0.9.0"
 
   def project do
     [
@@ -11,6 +11,7 @@ defmodule Exvalibur.MixProject do
       version: @version,
       elixir: "~> 1.7",
       start_permanent: Mix.env() == :prod,
+      elixirc_paths: elixirc_paths(Mix.env()),
       package: package(),
       xref: [exclude: []],
       description: description(),
@@ -79,4 +80,8 @@ defmodule Exvalibur.MixProject do
       ]
     ]
   end
+
+  defp elixirc_paths(:test), do: ["lib", "test/support"]
+  defp elixirc_paths(:dev), do: ["lib", "test/support"]
+  defp elixirc_paths(_), do: ["lib"]
 end

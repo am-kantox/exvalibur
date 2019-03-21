@@ -12,8 +12,8 @@ defmodule Exvalibur do
       ]
 
   and calls `Exvalibur.validator!/2`. The latter will produce a validator module
-  with as many clauses of `valid?/1` function as we have rules above (plus one
-  handling-all clause.) Once generated, the `valid?/1` function of the module
+  with as many clauses of `validate/1` function as we have rules above (plus one
+  handling-all clause.) Once generated, the `validate/1` function of the module
   generated might be called directly on the input data, providing blazingly fast
   validation based completely on pattern matching and guards.
 
@@ -21,12 +21,12 @@ defmodule Exvalibur do
 
       iex> rules = [%{matches: %{currency_pair: "EURUSD"}}]
       ...> Exvalibur.validator!(rules, module_name: Exvalibur.MatchValidator)
-      ...> Exvalibur.MatchValidator.valid?(%{currency_pair: "EURUSD", rate: 1.5})
+      ...> Exvalibur.MatchValidator.validate(%{currency_pair: "EURUSD", rate: 1.5})
       {:ok, %{currency_pair: "EURUSD"}}
 
       iex> rules = [%{conditions: %{rate: %{eq: 1.5}}}]
       ...> Exvalibur.validator!(rules, module_name: Exvalibur.ConditionValidator)
-      ...> Exvalibur.ConditionValidator.valid?(%{currency_pair: "EURGBP", rate: 1.5})
+      ...> Exvalibur.ConditionValidator.validate(%{currency_pair: "EURGBP", rate: 1.5})
       {:ok, %{rate: 1.5}}
 
       iex> rules = [%{foo: :bar}]
@@ -37,10 +37,8 @@ defmodule Exvalibur do
       ...>   e.reason
       ...> end
       %{empty_rule: %{foo: :bar}}
-  """
 
-  @doc """
-  Produces the validator module given the set of rules.
+  `Exvalibur.validator!/2` Produces the validator module given the set of rules.
 
   ## Options
 
@@ -54,19 +52,19 @@ defmodule Exvalibur do
       ...>   %{matches: %{currency_pair: "EURUSD"},
       ...>     conditions: %{rate: %{min: 1.0, max: 2.0}}}]
       ...> Exvalibur.validator!(rules, module_name: Exvalibur.Validator)
-      ...> Exvalibur.Validator.valid?(%{currency_pair: "EURUSD", rate: 1.5})
+      ...> Exvalibur.Validator.validate(%{currency_pair: "EURUSD", rate: 1.5})
       {:ok, %{currency_pair: "EURUSD", rate: 1.5}}
-      iex> Exvalibur.Validator.valid?(%{currency_pair: "EURGBP", rate: 1.5})
+      iex> Exvalibur.Validator.validate(%{currency_pair: "EURGBP", rate: 1.5})
       :error
-      iex> Exvalibur.Validator.valid?(%{currency_pair: "EURUSD", rate: 0.5})
+      iex> Exvalibur.Validator.validate(%{currency_pair: "EURUSD", rate: 0.5})
       :error
       iex> rules = [
       ...>   %{matches: %{currency_pair: "EURGBP"},
       ...>     conditions: %{rate: %{min: 1.0, max: 2.0}}}]
       ...> Exvalibur.validator!(rules, module_name: Exvalibur.Validator)
-      ...> Exvalibur.Validator.valid?(%{currency_pair: "EURGBP", rate: 1.5})
+      ...> Exvalibur.Validator.validate(%{currency_pair: "EURGBP", rate: 1.5})
       {:ok, %{currency_pair: "EURGBP", rate: 1.5}}
-      iex> Exvalibur.Validator.valid?(%{currency_pair: "EURUSD", rate: 1.5})
+      iex> Exvalibur.Validator.validate(%{currency_pair: "EURUSD", rate: 1.5})
       {:ok, %{currency_pair: "EURUSD", rate: 1.5}}
 
   ## Unknown conditions
@@ -86,7 +84,7 @@ defmodule Exvalibur do
 
   ## Return value
 
-  Generated `valid?/1` function returns either `:error` or `{:ok, map()}`.
+  Generated `validate/1` function returns either `:error` or `{:ok, map()}`.
   In a case of successful validation, the map contained values _that were indeed validated_.
   Note that in the following example the value for `any` key is not returned.
 
@@ -96,9 +94,9 @@ defmodule Exvalibur do
       ...>       rate: %{min: 1.0, max: 2.0},
       ...>       source: %{one_of: ["FOO", "BAR"]}}}]
       ...> Exvalibur.validator!(rules, module_name: Exvalibur.Validator, merge: false)
-      ...> Exvalibur.Validator.valid?(%{currency_pair: "EURGBP", any: 42, rate: 1.5, source: "FOO"})
+      ...> Exvalibur.Validator.validate(%{currency_pair: "EURGBP", any: 42, rate: 1.5, source: "FOO"})
       {:ok, %{currency_pair: "EURGBP", rate: 1.5, source: "FOO"}}
-      iex> Exvalibur.Validator.valid?(%{currency_pair: "EURUSD", any: 42, rate: 1.5, source: "BAH"})
+      iex> Exvalibur.Validator.validate(%{currency_pair: "EURUSD", any: 42, rate: 1.5, source: "BAH"})
       :error
 
   ## Module-based validators
@@ -110,18 +108,21 @@ defmodule Exvalibur do
       ...>       conditions: %{foo: %{min: 0, max: 100}},
       ...>       guards: %{num: num > 0 and num < 100}}]
       ...> end
-      iex> Validator.valid?(%{currency_pair: "EURUSD", foo: 50, num: 50})
+      iex> Validator.validate(%{currency_pair: "EURUSD", foo: 50, num: 50})
       {:ok, %{currency_pair: "EURUSD", foo: 50, num: 50}}
-      iex> Validator.valid?(%{currency_pair: "USDEUR", foo: 50, num: 50})
+      iex> Validator.validate(%{currency_pair: "USDEUR", foo: 50, num: 50})
       :error
-      iex> Validator.valid?(%{currency_pair: "EURUSD", foo: -50, num: 50})
+      iex> Validator.validate(%{currency_pair: "EURUSD", foo: -50, num: 50})
       :error
-      iex> Validator.valid?(%{currency_pair: "EURUSD", foo: 50, num: -50})
+      iex> Validator.validate(%{currency_pair: "EURUSD", foo: 50, num: -50})
       :error
   """
 
+  @known_fields ~w|matches conditions guards|a
+
   import Exvalibur.Sigils
 
+  @doc false
   defmacro __using__(opts), do: do_using(opts)
 
   @spec do_using(opts :: Keyword.t()) :: term()
@@ -141,71 +142,54 @@ defmodule Exvalibur do
       rules
       |> Enum.map(fn
         {:%{}, _, rule} ->
-          rule =
-            rule
-            |> Enum.into(%{})
-            |> get_and_update_in([:matches], fn
-              nil ->
-                :pop
-
-              {:%{}, _, list} = old when is_list(list) ->
-                matches =
-                  list
-                  |> Enum.map(fn {k, v} -> {k, ~q[#{Macro.to_string(v)}]} end)
-                  |> Enum.into(%{})
-
-                {old, matches}
-            end)
-            |> elem(1)
-            |> get_and_update_in([:conditions], fn
-              nil ->
-                :pop
-
-              {:%{}, _, list} = old when is_list(list) ->
-                conditions =
-                  list
-                  |> Enum.map(fn {k, {:%{}, _, vals}} -> {k, Enum.into(vals, %{})} end)
-                  |> Enum.into(%{})
-
-                {old, conditions}
-            end)
-            |> elem(1)
-            |> get_and_update_in([:guards], fn
-              nil ->
-                :pop
-
-              {:%{}, _, list} = old when is_list(list) ->
-                guards =
-                  list
-                  |> Enum.map(fn {k, guard} -> {k, Macro.to_string(guard)} end)
-                  |> Enum.into(%{})
-
-                {old, guards}
-            end)
-            |> elem(1)
-
           rule
-          |> Map.get(:guards, [])
-          |> Map.keys()
-          |> case do
-            [] ->
-              rule
-
-            vars when is_list(vars) ->
-              Enum.reduce(vars, rule, fn var, acc ->
-                acc
-                |> get_and_update_in([:matches], fn
-                  nil -> {nil, %{var => ~q[#{var}]}}
-                  %{} = map -> {map, Map.put(map, var, ~q[#{var}])}
-                end)
-                |> elem(1)
-              end)
-          end
+          |> Enum.into(%{})
+          |> do_using_clause(:matches, fn {k, v} -> {k, ~q[#{Macro.to_string(v)}]} end)
+          |> do_using_clause(:conditions, fn {k, {:%{}, _, vals}} ->
+            {k, Enum.into(vals, %{})}
+          end)
+          |> do_using_clause(:guards, fn {k, guard} -> {k, Macro.to_string(guard)} end)
+          |> do_using_update_guards()
       end)
       |> MapSet.new()
 
     ast(new_rules, flow)
   end
+
+  @spec do_using_clause(
+          map :: map(),
+          key :: :matches | :conditions | :guards,
+          (tuple() -> tuple())
+        ) :: map()
+  defp do_using_clause(map, key, mapper)
+       when is_map(map) and is_atom(key) and key in @known_fields do
+    map
+    |> get_and_update_in([key], fn
+      nil ->
+        :pop
+
+      {:%{}, _, list} = old when is_list(list) ->
+        {old, Enum.into(list, %{}, mapper)}
+    end)
+    |> elem(1)
+  end
+
+  @spec do_using_update_guards(map :: map()) :: map()
+  defp do_using_update_guards(%{guards: guards} = map)
+       when is_map(guards) and map_size(guards) > 0 do
+    guards
+    |> Map.keys()
+    |> Enum.reduce(map, fn guard, acc ->
+      acc
+      |> get_and_update_in([:matches], fn
+        nil -> {nil, %{guard => ~q[#{guard}]}}
+        %{} = map -> {map, Map.put(map, guard, ~q[#{guard}])}
+      end)
+      |> elem(1)
+    end)
+  end
+
+  defp do_using_update_guards(map), do: map
 
   @spec validator!(rules :: list() | MapSet.t(), opts :: list()) ::
           {:module, module(), binary(), term()}
@@ -234,8 +218,6 @@ defmodule Exvalibur do
 
     Module.create(name, ast(new_rules, processor), Macro.Env.location(__ENV__))
   end
-
-  @known_fields ~w|matches conditions guards|a
 
   @doc false
   @spec get_or_create_module_name(
@@ -289,30 +271,12 @@ defmodule Exvalibur do
         [guard_to_ast(guard) | conditional_guards]
       end)
       |> Enum.reduce([], fn
-        guard, [] ->
-          guard
-
-        guard, ast ->
-          {:and, [context: Elixir, import: Kernel], [ast, guard]}
+        guard, [] -> guard
+        guard, ast -> {:and, [context: Elixir, import: Kernel], [ast, guard]}
       end)
+      |> reduce_guards_clause(matches_and_conditions, matches_and_conditions_keys)
 
-    [
-      case conditional_guards do
-        [] ->
-          quote do
-            def valid?(unquote(matches_and_conditions) = mâp),
-              do: {:ok, Map.take(mâp, unquote(matches_and_conditions_keys))}
-          end
-
-        _ ->
-          quote do
-            def valid?(unquote(matches_and_conditions) = mâp)
-                when unquote(conditional_guards),
-                do: {:ok, Map.take(mâp, unquote(matches_and_conditions_keys))}
-          end
-      end
-      | acc
-    ]
+    [conditional_guards | acc]
   end
 
   defp reducer(%{guards: guards} = matches_conditions_guards, acc)
@@ -344,6 +308,27 @@ defmodule Exvalibur do
     reducer(matches_conditions_guards, acc)
   end
 
+  @spec reduce_guards_clause(
+          guards :: list(),
+          matches_and_conditions :: tuple(),
+          matches_and_conditions_keys :: list()
+        ) :: tuple()
+  defp reduce_guards_clause([], matches_and_conditions, matches_and_conditions_keys) do
+    quote do
+      @doc "Validates the input against rules. See #{__MODULE__}.rules/0"
+      def validate(unquote(matches_and_conditions) = mâp),
+        do: {:ok, Map.take(mâp, unquote(matches_and_conditions_keys))}
+    end
+  end
+
+  defp reduce_guards_clause(guards, matches_and_conditions, matches_and_conditions_keys) do
+    quote do
+      @doc "Validates the input against rules. See #{__MODULE__}.rules/0"
+      def validate(unquote(matches_and_conditions) = mâp) when unquote(guards),
+        do: {:ok, Map.take(mâp, unquote(matches_and_conditions_keys))}
+    end
+  end
+
   @spec empty?(group :: nil | binary() | map()) :: true | false
   defp empty?(nil), do: true
   defp empty?(map) when is_map(map) and map_size(map) == 0, do: true
@@ -368,7 +353,12 @@ defmodule Exvalibur do
   @spec ast(rules :: MapSet.t(), processor :: :flow | :enum) :: list()
   defp ast(%MapSet{map: rules}, _) when map_size(rules) == 0 do
     quote do
-      def valid?(any), do: {:ok, any}
+      @doc "Validates the input against rules. See #{__MODULE__}.rules/0"
+      def validate(any), do: {:ok, any}
+      @doc "Validates the input against rules. See #{__MODULE__}.rules/0"
+      @deprecated "Use #{__MODULE__}.validate/1 instead"
+      def valid?(any), do: validate(any)
+      @doc "The ruleset to validate an input against"
       def rules, do: []
     end
   end
@@ -382,7 +372,12 @@ defmodule Exvalibur do
         |> transformer(processor)
         |> Kernel.++([
           quote do
-            def valid?(_), do: :error
+            @doc "Validates the input against rules. See #{__MODULE__}.rules/0"
+            def validate(_), do: :error
+            @doc "Validates the input against rules. See #{__MODULE__}.rules/0"
+            @deprecated "Use #{__MODULE__}.validate/1 instead"
+            def valid?(any), do: validate(any)
+            @doc "The ruleset to validate an input against"
             def rules, do: unquote(Macro.escape(MapSet.to_list(rules)))
           end
         ])
