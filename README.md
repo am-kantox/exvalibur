@@ -129,9 +129,13 @@ Validator.valid?(%{currency_pair: "EURUSD", foo: 50, num: -50})
 
 ## Changelog
 
-#### `0.8.0` — module-based validators
+#### `0.9.0`
 
-## Documentation
+- `valid?/1` is deprecated in favor of `validate/1`; starting with `v1.0` `valid?/1` will return `boolean` value
 
-Documentation is available at [https://hexdocs.pm/exvalibur](https://hexdocs.pm/exvalibur).
+#### `0.8.0`
+
+- module-based validators
+
+## [Documentation](https://hexdocs.pm/exvalibur).
 
