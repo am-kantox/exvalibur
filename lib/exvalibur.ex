@@ -116,11 +116,49 @@ defmodule Exvalibur do
       :error
       iex> Validator.validate(%{currency_pair: "EURUSD", foo: 50, num: -50})
       :error
+
+  ## Custom validations
+
+  With module-based validators, one might add custom validations to the implementation:
+
+      iex> defmodule CustomValidator do
+      ...>   use Exvalibur, rules: [
+      ...>     %{conditions: %{foo: %{min: 0, max: 10}}}]
+      ...>
+      ...>   @impl Exvalibur.Validatable
+      ...>   def custom_validate(%{foo: foo}),
+      ...>     do: if foo == 42, do: {:ok, %{foo: 42}}, else: :error
+      ...> end
+      iex> CustomValidator.validate(%{foo: 5})
+      {:ok, %{foo: 5}}
+      iex> CustomValidator.validate(%{foo: 50})
+      :error
+      iex> CustomValidator.validate(%{foo: 42})
+      {:ok, %{foo: 42}}
   """
 
   @known_fields ~w|matches conditions guards|a
 
   import Exvalibur.Sigils
+
+  defmodule Validatable do
+    @moduledoc """
+    The behaviour all validators are to implement.
+
+    When the validator is module-based (injected with `use Exvalibur`,)
+      the default implementation comes out of the box.
+
+    Has `custom_validate/1` overridable callback to implement in the modules
+      for custom validation.
+    """
+
+    @doc """
+    Callback to be implemented in the modules using `Exvalibur`.
+
+    Called as a last resort: `rules` take precedence.
+    """
+    @callback custom_validate(data :: term()) :: {:ok, term()} | :error
+  end
 
   @doc false
   defmacro __using__(opts), do: do_using(opts)
@@ -353,13 +391,20 @@ defmodule Exvalibur do
   @spec ast(rules :: MapSet.t(), processor :: :flow | :enum) :: list()
   defp ast(%MapSet{map: rules}, _) when map_size(rules) == 0 do
     quote do
+      @behaviour Exvalibur.Validatable
+
       @doc "Validates the input against rules. See #{__MODULE__}.rules/0"
-      def validate(any), do: {:ok, any}
+      def validate(any), do: custom_validate(any)
       @doc "Validates the input against rules. See #{__MODULE__}.rules/0"
       @deprecated "Use #{__MODULE__}.validate/1 instead"
       def valid?(any), do: validate(any)
       @doc "The ruleset to validate an input against"
       def rules, do: []
+
+      @doc false
+      @impl Exvalibur.Validatable
+      def custom_validate(any), do: {:ok, any}
+      defoverridable custom_validate: 1
     end
   end
 
@@ -367,18 +412,24 @@ defmodule Exvalibur do
     [
       quote do
         import Exvalibur.Guards
+        @behaviour Exvalibur.Validatable
       end
       | rules
         |> transformer(processor)
         |> Kernel.++([
           quote do
             @doc "Validates the input against rules. See #{__MODULE__}.rules/0"
-            def validate(_), do: :error
+            def validate(any), do: custom_validate(any)
             @doc "Validates the input against rules. See #{__MODULE__}.rules/0"
             @deprecated "Use #{__MODULE__}.validate/1 instead"
             def valid?(any), do: validate(any)
             @doc "The ruleset to validate an input against"
             def rules, do: unquote(Macro.escape(MapSet.to_list(rules)))
+
+            @doc false
+            @impl Exvalibur.Validatable
+            def custom_validate(any), do: :error
+            defoverridable custom_validate: 1
           end
         ])
     ]

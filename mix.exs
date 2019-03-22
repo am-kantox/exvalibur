@@ -3,7 +3,7 @@ defmodule Exvalibur.MixProject do
 
   @app :exvalibur
   @app_name "exvalibur"
-  @version "0.9.0"
+  @version "0.10.0"
 
   def project do
     [
@@ -72,8 +72,9 @@ defmodule Exvalibur.MixProject do
         # "stuff/backends.md"
       ],
       groups_for_modules: [
-        # Exvalibur
-
+        Behaviours: [
+          Exvalibur.Validatable
+        ],
         "Default Guards": [
           Exvalibur.Guards.Default
         ]
