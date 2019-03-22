@@ -129,6 +129,10 @@ Validator.valid?(%{currency_pair: "EURUSD", foo: 50, num: -50})
 
 ## Changelog
 
+#### `0.10.0`
+
+- `@behaviour Exvalibur.Validatable` with overridable `custom_validate/1`
+
 #### `0.9.0`
 
 - `valid?/1` is deprecated in favor of `validate/1`; starting with `v1.0` `valid?/1` will return `boolean` value
