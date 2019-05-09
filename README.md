@@ -129,6 +129,10 @@ Validator.valid?(%{currency_pair: "EURUSD", foo: 50, num: -50})
 
 ## Changelog
 
+#### `0.11.0`
+
+- Descriptive errors
+
 #### `0.10.0`
 
 - `@behaviour Exvalibur.Validatable` with overridable `custom_validate/1`
