@@ -126,13 +126,19 @@ defmodule Exvalibur do
       ...>     %{conditions: %{foo: %{min: 0, max: 10}}}]
       ...>
       ...>   @impl Exvalibur.Validatable
-      ...>   def custom_validate(%{foo: foo}),
-      ...>     do: if foo == 42, do: {:ok, %{foo: 42}}, else: :error
+      ...>   def custom_validate(%{foo: foo}, opts),
+      ...>     do: if foo == 42, do: {:ok, %{foo: 42}}, else: super(%{foo: foo}, opts)
       ...> end
       iex> CustomValidator.validate(%{foo: 5})
       {:ok, %{foo: 5}}
       iex> CustomValidator.validate(%{foo: 50})
       :error
+      iex> with {:error, error} <- CustomValidator.validate(%{foo: 50}, error: :detailed),
+      ...>   do: error.reason
+      %{
+        input: %{foo: 50},
+        rules: [%{conditions: %{foo: %{max: 10, min: 0}}}]
+      }
       iex> CustomValidator.validate(%{foo: 42})
       {:ok, %{foo: 42}}
   """
@@ -148,7 +154,7 @@ defmodule Exvalibur do
     When the validator is module-based (injected with `use Exvalibur`,)
       the default implementation comes out of the box.
 
-    Has `custom_validate/1` overridable callback to implement in the modules
+    Has `custom_validate/2` overridable callback to implement in the modules
       for custom validation.
     """
 
@@ -157,7 +163,10 @@ defmodule Exvalibur do
 
     Called as a last resort: `rules` take precedence.
     """
-    @callback custom_validate(data :: term()) :: {:ok, term()} | :error
+    @callback custom_validate(data :: term()) ::
+                {:ok, term()} | :error
+    @callback custom_validate(data :: term(), Keyword.t()) ::
+                {:ok, term()} | :error | {:error, %Exvalibur.Error{}}
   end
 
   @doc false
@@ -354,7 +363,7 @@ defmodule Exvalibur do
   defp reduce_guards_clause([], matches_and_conditions, matches_and_conditions_keys) do
     quote do
       @doc "Validates the input against rules. See #{__MODULE__}.rules/0"
-      def validate(unquote(matches_and_conditions) = mâp),
+      def validate(unquote(matches_and_conditions) = mâp, _opts),
         do: {:ok, Map.take(mâp, unquote(matches_and_conditions_keys))}
     end
   end
@@ -362,7 +371,7 @@ defmodule Exvalibur do
   defp reduce_guards_clause(guards, matches_and_conditions, matches_and_conditions_keys) do
     quote do
       @doc "Validates the input against rules. See #{__MODULE__}.rules/0"
-      def validate(unquote(matches_and_conditions) = mâp) when unquote(guards),
+      def validate(unquote(matches_and_conditions) = mâp, _opts) when unquote(guards),
         do: {:ok, Map.take(mâp, unquote(matches_and_conditions_keys))}
     end
   end
@@ -392,9 +401,11 @@ defmodule Exvalibur do
   defp ast(%MapSet{map: rules}, _) when map_size(rules) == 0 do
     quote do
       @behaviour Exvalibur.Validatable
+      @doc "Validates the input against rules. See #{__MODULE__}.rules/0"
+      def validate(any, opts \\ [])
 
       @doc "Validates the input against rules. See #{__MODULE__}.rules/0"
-      def validate(any), do: custom_validate(any)
+      def validate(any, opts), do: custom_validate(any, opts)
       @doc "Validates the input against rules. See #{__MODULE__}.rules/0"
       @deprecated "Use #{__MODULE__}.validate/1 instead"
       def valid?(any), do: validate(any)
@@ -403,8 +414,9 @@ defmodule Exvalibur do
 
       @doc false
       @impl Exvalibur.Validatable
-      def custom_validate(any), do: {:ok, any}
-      defoverridable custom_validate: 1
+      def custom_validate(any, _opts \\ []), do: {:ok, any}
+
+      defoverridable custom_validate: 1, custom_validate: 2
     end
   end
 
@@ -413,13 +425,15 @@ defmodule Exvalibur do
       quote do
         import Exvalibur.Guards
         @behaviour Exvalibur.Validatable
+        @doc "Validates the input against rules. See #{__MODULE__}.rules/0"
+        def validate(any, opts \\ [])
       end
       | rules
         |> transformer(processor)
         |> Kernel.++([
           quote do
             @doc "Validates the input against rules. See #{__MODULE__}.rules/0"
-            def validate(any), do: custom_validate(any)
+            def validate(any, opts), do: custom_validate(any, opts)
             @doc "Validates the input against rules. See #{__MODULE__}.rules/0"
             @deprecated "Use #{__MODULE__}.validate/1 instead"
             def valid?(any), do: validate(any)
@@ -428,8 +442,17 @@ defmodule Exvalibur do
 
             @doc false
             @impl Exvalibur.Validatable
-            def custom_validate(any), do: :error
-            defoverridable custom_validate: 1
+            def custom_validate(any, opts \\ []) do
+              case opts[:error] do
+                :detailed ->
+                  {:error, Exvalibur.Error.exception(reason: %{input: any, rules: rules()})}
+
+                _ ->
+                  :error
+              end
+            end
+
+            defoverridable custom_validate: 1, custom_validate: 2
           end
         ])
     ]

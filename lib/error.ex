@@ -31,11 +31,27 @@ defmodule Exvalibur.Error do
     %Exvalibur.Error{message: message, reason: reason}
   end
 
+  @doc false
   def exception(reason: %{empty_rule: rule} = reason) do
     message = """
       Empty rule #{inspect(rule)} in call to `Exvalibur.validator!/2`.
 
       The rule must contain either `matches` or `conditions` field.
+    """
+
+    %Exvalibur.Error{message: message, reason: reason}
+  end
+
+  @doc false
+  def exception(reason: %{input: input, rules: rules} = reason) do
+    message = """
+      No `valid?/1` clause matched the input given:
+
+      #{inspect(input, limit: :infinity)}
+
+      Known rules are:
+
+      #{inspect(rules, limit: :infinity)}
     """
 
     %Exvalibur.Error{message: message, reason: reason}
